@@ -56,6 +56,115 @@ function formatDateToMonth(dateStr: string): string {
   return `${date.getMonth() + 1}월`;
 }
 
+// 일별 데이터를 주별로 집계하는 헬퍼 함수
+function aggregateToWeekly(dailyData: { date: string; coinUsed: number; messageCount: number }[]): {
+  date: string;
+  coinUsed: number;
+  messageCount: number;
+}[] {
+  if (!dailyData || dailyData.length === 0) return [];
+
+  const weeklyData: { date: string; coinUsed: number; messageCount: number }[] = [];
+
+  for (let i = 0; i < dailyData.length; i += 7) {
+    const weekData = dailyData.slice(i, i + 7);
+    const totalCoinUsed = weekData.reduce((sum, day) => sum + day.coinUsed, 0);
+    const totalMessageCount = weekData.reduce((sum, day) => sum + day.messageCount, 0);
+
+    // 주의 시작 날짜를 대표 날짜로 사용
+    weeklyData.push({
+      date: weekData[0].date,
+      coinUsed: totalCoinUsed,
+      messageCount: totalMessageCount,
+    });
+  }
+
+  return weeklyData;
+}
+
+// 기간 선택 드롭다운 컴포넌트
+function PeriodDropdown({
+  value,
+  onChange,
+}: {
+  value: "monthly" | "weekly";
+  onChange: (value: "monthly" | "weekly") => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-[27px] rounded-[4px] px-2 border border-[#929292] flex items-center gap-2 hover:border-[#ff7600] transition-colors"
+      >
+        <svg className="w-[17px] h-[19px]" fill="none" viewBox="0 0 19 22">
+          <path
+            d="M17 3H15V1M4 3H2V1M4 3H15M4 3V5M15 3V5M2 9V19C2 20.1046 2.89543 21 4 21H15C16.1046 21 17 20.1046 17 19V9M2 9H17M2 9V7C2 5.89543 2.89543 5 4 5H15C16.1046 5 17 5.89543 17 7V9"
+            stroke="#F5F5F5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+        </svg>
+        <p className="font-['Pretendard:Regular',sans-serif] text-[#e0e0e0] text-[13px] sm:text-[15px]">
+          {value}
+        </p>
+        <svg className="w-[13px] h-[17px]" fill="none" viewBox="0 0 13 17">
+          <path
+            d="M2 7L7.00081 11.58L12 7"
+            stroke="#F5F5F5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+          />
+        </svg>
+      </button>
+
+      {/* 드롭다운 메뉴 */}
+      {isOpen && (
+        <>
+          {/* 배경 클릭 시 닫기 */}
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* 드롭다운 메뉴 */}
+          <div className="absolute top-full right-0 mt-1 w-[120px] bg-[#1d1f21] border border-[#444648] rounded-[4px] shadow-lg z-20 overflow-hidden">
+            <button
+              onClick={() => {
+                onChange("monthly");
+                setIsOpen(false);
+              }}
+              className={`w-full px-3 py-2 text-left text-[13px] sm:text-[15px] font-['Pretendard:Regular',sans-serif] transition-colors ${
+                value === "monthly"
+                  ? "bg-[#ff7600] text-white"
+                  : "text-[#e0e0e0] hover:bg-[#2c2e30]"
+              }`}
+            >
+              monthly
+            </button>
+            <button
+              onClick={() => {
+                onChange("weekly");
+                setIsOpen(false);
+              }}
+              className={`w-full px-3 py-2 text-left text-[13px] sm:text-[15px] font-['Pretendard:Regular',sans-serif] transition-colors ${
+                value === "weekly"
+                  ? "bg-[#ff7600] text-white"
+                  : "text-[#e0e0e0] hover:bg-[#2c2e30]"
+              }`}
+            >
+              weekly
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PriceCard({ model }: { model: ModelPricing }) {
   return (
     <div className="relative rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
@@ -297,29 +406,7 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <p className="font-['Pretendard:SemiBold',sans-serif] text-neutral-100 text-[20px] sm:text-[24px]">
                         내 총 코인량
                       </p>
-                      <div className="h-[27px] rounded-[4px] px-2 border border-[#929292] flex items-center gap-2">
-                        <svg className="w-[17px] h-[19px]" fill="none" viewBox="0 0 19 22">
-                          <path
-                            d={svgPathsDashboard.p25bbfa00}
-                            stroke="#F5F5F5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                        <p className="font-['Pretendard:Regular',sans-serif] text-[#e0e0e0] text-[13px] sm:text-[15px]">
-                          monthly
-                        </p>
-                        <svg className="w-[13px] h-[17px]" fill="none" viewBox="0 0 13 17">
-                          <path
-                            d="M2 7L7.00081 11.58L12 7"
-                            stroke="#F5F5F5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      </div>
+                      <PeriodDropdown value={slide1Period} onChange={setSlide1Period} />
                     </div>
 
                     {usageLoading ? (
@@ -334,35 +421,51 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <>
                         {/* Chart container */}
                         <div className="relative h-[180px] sm:h-[200px] w-full flex">
-                          {/* Y-axis labels */}
-                          <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
-                            {generateYAxisLabels(Math.max(...usage.dailyUsage.map(d => d.coinUsed))).map((label, i) => (
-                              <span key={i}>{label}</span>
-                            ))}
-                          </div>
+                          {(() => {
+                            const displayData = slide1Period === "weekly"
+                              ? aggregateToWeekly(usage.dailyUsage)
+                              : usage.dailyUsage;
+                            const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed));
 
-                          {/* Chart */}
-                          <div className="flex-1 relative">
-                            <svg
-                              className="absolute inset-0 w-full h-full"
-                              fill="none"
-                              preserveAspectRatio="none"
-                              viewBox="0 0 340 116"
-                            >
-                              <path
-                                d={createSVGPath(usage.dailyUsage, 340, 116)}
-                                stroke="#FF7600"
-                                strokeWidth="2"
-                              />
-                            </svg>
-                          </div>
+                            return (
+                              <>
+                                {/* Y-axis labels */}
+                                <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
+                                  {generateYAxisLabels(maxCoinUsed).map((label, i) => (
+                                    <span key={i}>{label}</span>
+                                  ))}
+                                </div>
+
+                                {/* Chart */}
+                                <div className="flex-1 relative">
+                                  <svg
+                                    className="absolute inset-0 w-full h-full"
+                                    fill="none"
+                                    preserveAspectRatio="none"
+                                    viewBox="0 0 340 116"
+                                  >
+                                    <path
+                                      d={createSVGPath(displayData, 340, 116)}
+                                      stroke="#FF7600"
+                                      strokeWidth="2"
+                                    />
+                                  </svg>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {/* X-axis labels */}
                         <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
-                          {usage.dailyUsage.slice(0, 5).map((day, i) => (
-                            <span key={i}>{formatDateToMonth(day.date)}</span>
-                          ))}
+                          {(() => {
+                            const displayData = slide1Period === "weekly"
+                              ? aggregateToWeekly(usage.dailyUsage)
+                              : usage.dailyUsage;
+                            return displayData.slice(0, 5).map((day, i) => (
+                              <span key={i}>{formatDateToMonth(day.date)}</span>
+                            ));
+                          })()}
                         </div>
                       </>
                     ) : (
@@ -379,29 +482,7 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <p className="font-['Pretendard:SemiBold',sans-serif] text-neutral-100 text-[18px] sm:text-[24px]">
                         AI모델별 코인 사용량
                       </p>
-                      <div className="h-[27px] rounded-[4px] px-2 border border-[#929292] flex items-center gap-2">
-                        <svg className="w-[17px] h-[19px]" fill="none" viewBox="0 0 19 22">
-                          <path
-                            d={svgPathsModelUsage.p25bbfa00}
-                            stroke="#F5F5F5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                        <p className="font-['Pretendard:Regular',sans-serif] text-[#e0e0e0] text-[13px] sm:text-[15px]">
-                          monthly
-                        </p>
-                        <svg className="w-[13px] h-[17px]" fill="none" viewBox="0 0 13 17">
-                          <path
-                            d="M2 7L7.00081 11.58L12 7"
-                            stroke="#F5F5F5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      </div>
+                      <PeriodDropdown value={slide2Period} onChange={setSlide2Period} />
                     </div>
 
                     {usageLoading ? (
@@ -456,29 +537,7 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <p className="font-['Pretendard:SemiBold',sans-serif] text-neutral-100 text-[20px] sm:text-[24px]">
                         월별 사용 코인량
                       </p>
-                      <div className="h-[27px] rounded-[4px] px-2 border border-[#929292] flex items-center gap-2">
-                        <svg className="w-[17px] h-[19px]" fill="none" viewBox="0 0 19 22">
-                          <path
-                            d={svgPathsMonthlyUsage.p25bbfa00}
-                            stroke="#F5F5F5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                        <p className="font-['Pretendard:Regular',sans-serif] text-[#e0e0e0] text-[13px] sm:text-[15px]">
-                          monthly
-                        </p>
-                        <svg className="w-[13px] h-[17px]" fill="none" viewBox="0 0 13 17">
-                          <path
-                            d="M2 7L7.00081 11.58L12 7"
-                            stroke="#F5F5F5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      </div>
+                      <PeriodDropdown value={slide3Period} onChange={setSlide3Period} />
                     </div>
 
                     {usageLoading ? (
@@ -493,35 +552,51 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <>
                         {/* Chart container */}
                         <div className="relative h-[180px] sm:h-[200px] w-full flex">
-                          {/* Y-axis labels */}
-                          <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
-                            {generateYAxisLabels(Math.max(...usage.dailyUsage.map(d => d.coinUsed))).map((label, i) => (
-                              <span key={i}>{label}</span>
-                            ))}
-                          </div>
+                          {(() => {
+                            const displayData = slide3Period === "weekly"
+                              ? aggregateToWeekly(usage.dailyUsage)
+                              : usage.dailyUsage;
+                            const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed));
 
-                          {/* Chart */}
-                          <div className="flex-1 relative">
-                            <svg
-                              className="absolute inset-0 w-full h-full"
-                              fill="none"
-                              preserveAspectRatio="none"
-                              viewBox="0 0 350 144"
-                            >
-                              <path
-                                d={createSVGPath(usage.dailyUsage, 350, 144)}
-                                stroke="#FF7600"
-                                strokeWidth="2"
-                              />
-                            </svg>
-                          </div>
+                            return (
+                              <>
+                                {/* Y-axis labels */}
+                                <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
+                                  {generateYAxisLabels(maxCoinUsed).map((label, i) => (
+                                    <span key={i}>{label}</span>
+                                  ))}
+                                </div>
+
+                                {/* Chart */}
+                                <div className="flex-1 relative">
+                                  <svg
+                                    className="absolute inset-0 w-full h-full"
+                                    fill="none"
+                                    preserveAspectRatio="none"
+                                    viewBox="0 0 350 144"
+                                  >
+                                    <path
+                                      d={createSVGPath(displayData, 350, 144)}
+                                      stroke="#FF7600"
+                                      strokeWidth="2"
+                                    />
+                                  </svg>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {/* X-axis labels */}
                         <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
-                          {usage.dailyUsage.slice(0, 5).map((day, i) => (
-                            <span key={i}>{formatDateToMonth(day.date)}</span>
-                          ))}
+                          {(() => {
+                            const displayData = slide3Period === "weekly"
+                              ? aggregateToWeekly(usage.dailyUsage)
+                              : usage.dailyUsage;
+                            return displayData.slice(0, 5).map((day, i) => (
+                              <span key={i}>{formatDateToMonth(day.date)}</span>
+                            ));
+                          })()}
                         </div>
                       </>
                     ) : (
