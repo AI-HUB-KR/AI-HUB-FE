@@ -8,6 +8,7 @@ import svgPathsMonthlyUsage from "@/assets/svgs/monthlyUsage";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useMonthlyUsage } from "@/hooks/useMonthlyUsage";
 import { useModelsPricing } from "@/hooks/useModelsPricing";
+import { useInfiniteRooms } from "@/hooks/useRooms";
 import { ModelPricing } from "@/types/dashboard";
 
 interface DashboardProps {
@@ -54,6 +55,15 @@ function generateYAxisLabels(maxValue: number): string[] {
 function formatDateToMonth(dateStr: string): string {
   const date = new Date(dateStr);
   return `${date.getMonth() + 1}월`;
+}
+
+// 날짜를 "YYYY/MM/DD" 형식으로 변환
+function formatDateToYMD(dateStr: string): string {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}/${month}/${day}`;
 }
 
 // 일별 데이터를 주별로 집계하는 헬퍼 함수
@@ -319,6 +329,18 @@ export function Dashboard({ onClose }: DashboardProps) {
   const { stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
   const { usage, isLoading: usageLoading, error: usageError } = useMonthlyUsage();
   const { models, isLoading: modelsLoading, error: modelsError } = useModelsPricing();
+  const {
+    rooms,
+    isLoading: roomsLoading,
+    isFetchingMore: roomsFetchingMore,
+    error: roomsError,
+    hasMore: hasMoreRooms,
+    fetchMoreRooms,
+  } = useInfiniteRooms({
+    pageSize: 3, // 3개씩 로드
+    sortField: "createdAt", // lastMessageAt은 null일 수 있어서 createdAt 사용
+    sortDirection: "desc",
+  });
 
   const paginate = (newDirection: number) => {
     setCurrentSlide((prev) => {
@@ -629,40 +651,66 @@ export function Dashboard({ onClose }: DashboardProps) {
                 채팅별 사용 코인량
               </h2>
 
-              {/* Table */}
-              <div className="space-y-3">
-                {/* Table Header */}
-                <div className="grid grid-cols-[1fr_2fr_auto] gap-2 sm:gap-4 text-white font-['Pretendard:Regular',sans-serif] text-[14px] sm:text-[16px] px-2">
-                  <div>Date</div>
-                  <div>Topic</div>
-                  <div>amount</div>
+              {roomsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-[#929292]">로딩 중...</p>
                 </div>
-
-                {/* Table Rows */}
-                <div className="space-y-2">
-                  {[
-                    { date: "2025/10/10", topic: "컴퓨터구조 빠르게 공부하는 법", amount: "-3$" },
-                    { date: "2025/10/10", topic: "컴퓨터구조 느리게 공부하는 법", amount: "-5$" },
-                    { date: "2025/10/10", topic: "컴퓨터구조 재밌게 공부하는 법", amount: "-10$" },
-                  ].map((row, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-[1fr_2fr_auto] gap-2 sm:gap-4 border border-[#444648] rounded-[8px] p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white font-['Pretendard:Regular',sans-serif] text-[12px] sm:text-[13px]"
-                    >
-                      <div className="truncate">{row.date}</div>
-                      <div className="truncate">{row.topic}</div>
-                      <div className="text-right">{row.amount}</div>
-                    </div>
-                  ))}
-
-                  {/* Dots row */}
-                  <div className="border border-[#444648] rounded-[8px] p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center justify-center">
-                    <p className="font-['Pretendard:Regular',sans-serif] text-[13px] text-white rotate-90">
-                      ...
-                    </p>
+              ) : roomsError ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-red-500">{roomsError.message}</p>
+                </div>
+              ) : rooms.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-[1fr_2fr_auto] gap-2 sm:gap-4 text-white font-['Pretendard:Regular',sans-serif] text-[14px] sm:text-[16px] px-2">
+                    <div>Date</div>
+                    <div>Topic</div>
+                    <div>amount</div>
                   </div>
+
+                  {/* Table Rows */}
+                  <div className="space-y-2">
+                    {rooms.map((room) => (
+                      <div
+                        key={room.roomId}
+                        className="grid grid-cols-[1fr_2fr_auto] gap-2 sm:gap-4 border border-[#444648] rounded-[8px] p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white font-['Pretendard:Regular',sans-serif] text-[12px] sm:text-[13px]"
+                      >
+                        <div className="truncate">
+                          {formatDateToYMD(room.lastMessageAt || room.createdAt)}
+                        </div>
+                        <div className="truncate">{room.title}</div>
+                        <div className="text-right">
+                          {room.coinUsage > 0
+                            ? `-${room.coinUsage.toFixed(3)}개`
+                            : '0개'}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 더보기 버튼 */}
+                    {hasMoreRooms && (
+                      <button
+                        onClick={fetchMoreRooms}
+                        disabled={roomsFetchingMore}
+                        className="w-full border border-[#444648] rounded-[8px] p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center justify-center hover:border-[#ff7600] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <p className="font-['Pretendard:Regular',sans-serif] text-[13px] text-white rotate-90">
+                          {roomsFetchingMore ? '...' : '...'}
+                        </p>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 안내 텍스트 */}
+                  <p className="text-[#929292] text-[11px] sm:text-[12px] text-center mt-3 font-['Pretendard:Regular',sans-serif]">
+                    사용 토큰량은 소수점 셋째 자리까지 표시됩니다
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-[#929292]">채팅방이 없습니다</p>
+                </div>
+              )}
             </div>
           </>
         )}
