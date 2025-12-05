@@ -5,58 +5,14 @@ import { motion } from "framer-motion";
 import svgPathsDashboard from "@/assets/svgs/dashboard";
 import svgPathsModelUsage from "@/assets/svgs/modelUsage";
 import svgPathsMonthlyUsage from "@/assets/svgs/monthlyUsage";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useMonthlyUsage } from "@/hooks/useMonthlyUsage";
+import { useModelsPricing } from "@/hooks/useModelsPricing";
+import { ModelPricing } from "@/types/dashboard";
 
 interface DashboardProps {
   onClose: () => void;
 }
-
-// AI 모델 데이터 타입
-interface AIModel {
-  displayName: string;
-  inputPricePer1k: number;
-  outputPricePer1k: number;
-  averagePricePer1k: number;
-  isActive: boolean;
-}
-
-// 목 데이터
-const aiModels: AIModel[] = [
-  {
-    displayName: "Claude 3.7 Sonnet",
-    inputPricePer1k: 0.003,
-    outputPricePer1k: 0.015,
-    averagePricePer1k: 0.009,
-    isActive: true,
-  },
-  {
-    displayName: "GPT 4o",
-    inputPricePer1k: 0.005,
-    outputPricePer1k: 0.015,
-    averagePricePer1k: 0.01,
-    isActive: true,
-  },
-  {
-    displayName: "GPT o4 mini-high",
-    inputPricePer1k: 0.0015,
-    outputPricePer1k: 0.006,
-    averagePricePer1k: 0.00375,
-    isActive: true,
-  },
-  {
-    displayName: "Gemini 2.5 Flash",
-    inputPricePer1k: 0.001,
-    outputPricePer1k: 0.004,
-    averagePricePer1k: 0.0025,
-    isActive: true,
-  },
-  {
-    displayName: "Grok",
-    inputPricePer1k: 0.002,
-    outputPricePer1k: 0.01,
-    averagePricePer1k: 0.006,
-    isActive: false,
-  },
-];
 
 const slides = [
   { id: 0, title: "내 총 코인량" },
@@ -64,7 +20,43 @@ const slides = [
   { id: 2, title: "월별 사용 코인량" },
 ];
 
-function PriceCard({ model }: { model: AIModel }) {
+// dailyUsage를 SVG path로 변환하는 헬퍼 함수
+function createSVGPath(data: { date: string; coinUsed: number }[], width: number, height: number): string {
+  if (!data || data.length === 0) return "";
+
+  const maxCoinUsed = Math.max(...data.map((d) => d.coinUsed), 1);
+  const xStep = width / (data.length - 1 || 1);
+
+  const points = data.map((point, index) => {
+    const x = index * xStep;
+    const y = height - (point.coinUsed / maxCoinUsed) * height;
+    return `${x},${y}`;
+  });
+
+  return `M ${points.join(" L ")}`;
+}
+
+// Y축 레이블 생성 헬퍼 함수
+function generateYAxisLabels(maxValue: number): string[] {
+  if (maxValue === 0) return ["0", "0", "0"];
+
+  const roundedMax = Math.ceil(maxValue / 1000) * 1000;
+  const step = roundedMax / 2;
+
+  return [
+    `${roundedMax / 1000}k`,
+    `${step / 1000}k`,
+    `${(step / 2) / 1000}k`
+  ];
+}
+
+// 날짜를 "M월" 형식으로 변환
+function formatDateToMonth(dateStr: string): string {
+  const date = new Date(dateStr);
+  return `${date.getMonth() + 1}월`;
+}
+
+function PriceCard({ model }: { model: ModelPricing }) {
   return (
     <div className="relative rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
       <div className="p-4">
@@ -147,7 +139,15 @@ function PriceCard({ model }: { model: AIModel }) {
   );
 }
 
-function ModelPriceContent() {
+function ModelPriceContent({
+  models,
+  isLoading,
+  error
+}: {
+  models: ModelPricing[];
+  isLoading: boolean;
+  error: Error | null;
+}) {
   return (
     <div className="space-y-6">
       <div className="rounded-[15px] bg-[rgba(29,31,33,0.95)] p-4 sm:p-5">
@@ -158,22 +158,40 @@ function ModelPriceContent() {
           AI 모델 토큰 가격
         </h2>
 
-        {/* 모델 리스트 */}
-        <div className="space-y-3">
-          {aiModels.map((model, index) => (
-            <PriceCard key={index} model={model} />
-          ))}
-        </div>
+        {/* 로딩 상태 */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-[#929292]">로딩 중...</p>
+          </div>
+        )}
 
-        {/* 하단 안내 */}
-        <div className="mt-4 border-t border-[#444648] pt-4">
-          <p
-            className="text-center text-[12px] text-[#929292]"
-            style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 400 }}
-          >
-            모든 가격은 USD 기준이며 1,000토큰당 가격입니다
-          </p>
-        </div>
+        {/* 에러 상태 */}
+        {error && !isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-red-500">{error.message}</p>
+          </div>
+        )}
+
+        {/* 모델 리스트 */}
+        {!isLoading && !error && (
+          <>
+            <div className="space-y-3">
+              {models.map((model) => (
+                <PriceCard key={model.modelId} model={model} />
+              ))}
+            </div>
+
+            {/* 하단 안내 */}
+            <div className="mt-4 border-t border-[#444648] pt-4">
+              <p
+                className="text-center text-[12px] text-[#929292]"
+                style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 400 }}
+              >
+                모든 가격은 USD 기준이며 1,000토큰당 가격입니다
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -182,6 +200,16 @@ function ModelPriceContent() {
 export function Dashboard({ onClose }: DashboardProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState<"dashboard" | "pricing">("dashboard");
+
+  // 각 슬라이드별 드롭다운 상태 (monthly/weekly)
+  const [slide1Period, setSlide1Period] = useState<"monthly" | "weekly">("monthly");
+  const [slide2Period, setSlide2Period] = useState<"monthly" | "weekly">("monthly");
+  const [slide3Period, setSlide3Period] = useState<"monthly" | "weekly">("monthly");
+
+  // API 훅 사용
+  const { stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
+  const { usage, isLoading: usageLoading, error: usageError } = useMonthlyUsage();
+  const { models, isLoading: modelsLoading, error: modelsError } = useModelsPricing();
 
   const paginate = (newDirection: number) => {
     setCurrentSlide((prev) => {
@@ -294,36 +322,54 @@ export function Dashboard({ onClose }: DashboardProps) {
                       </div>
                     </div>
 
-                    {/* Chart container */}
-                    <div className="relative h-[180px] sm:h-[200px] w-full flex">
-                      {/* Y-axis labels */}
-                      <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
-                        <span>20k</span>
-                        <span>10k</span>
-                        <span>5k</span>
+                    {usageLoading ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292]">로딩 중...</p>
                       </div>
-
-                      {/* Chart */}
-                      <div className="flex-1 relative">
-                        <svg
-                          className="absolute inset-0 w-full h-full"
-                          fill="none"
-                          preserveAspectRatio="none"
-                          viewBox="0 0 340 116"
-                        >
-                          <path d={svgPathsDashboard.p23627680} stroke="#FF7600" strokeWidth="2" />
-                        </svg>
+                    ) : usageError ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-red-500">{usageError.message}</p>
                       </div>
-                    </div>
+                    ) : usage && usage.dailyUsage.length > 0 ? (
+                      <>
+                        {/* Chart container */}
+                        <div className="relative h-[180px] sm:h-[200px] w-full flex">
+                          {/* Y-axis labels */}
+                          <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
+                            {generateYAxisLabels(Math.max(...usage.dailyUsage.map(d => d.coinUsed))).map((label, i) => (
+                              <span key={i}>{label}</span>
+                            ))}
+                          </div>
 
-                    {/* X-axis labels */}
-                    <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
-                      <span>6월</span>
-                      <span>7월</span>
-                      <span>8월</span>
-                      <span>9월</span>
-                      <span>10월</span>
-                    </div>
+                          {/* Chart */}
+                          <div className="flex-1 relative">
+                            <svg
+                              className="absolute inset-0 w-full h-full"
+                              fill="none"
+                              preserveAspectRatio="none"
+                              viewBox="0 0 340 116"
+                            >
+                              <path
+                                d={createSVGPath(usage.dailyUsage, 340, 116)}
+                                stroke="#FF7600"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* X-axis labels */}
+                        <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
+                          {usage.dailyUsage.slice(0, 5).map((day, i) => (
+                            <span key={i}>{formatDateToMonth(day.date)}</span>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292]">데이터가 없습니다</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -358,54 +404,49 @@ export function Dashboard({ onClose }: DashboardProps) {
                       </div>
                     </div>
 
-                    {/* Horizontal bar chart */}
-                    <div className="space-y-4 mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-['Pretendard:SemiBold',sans-serif] text-white text-[11px] sm:text-[12px] w-[60px]">
-                          chatGPT
-                        </span>
-                        <div
-                          className="flex-1 bg-[#ff7600] h-[18px] sm:h-[21px] rounded-br-[8px] rounded-tr-[8px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                          style={{ width: "85%" }}
-                        />
+                    {usageLoading ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292]">로딩 중...</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-['Pretendard:SemiBold',sans-serif] text-white text-[11px] sm:text-[12px] w-[60px]">
-                          Claude
-                        </span>
-                        <div
-                          className="flex-1 bg-[#e0e0e0] h-[18px] sm:h-[21px] rounded-br-[8px] rounded-tr-[8px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                          style={{ width: "20%" }}
-                        />
+                    ) : usageError ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-red-500">{usageError.message}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-['Pretendard:SemiBold',sans-serif] text-white text-[11px] sm:text-[12px] w-[60px]">
-                          Grok
-                        </span>
-                        <div
-                          className="flex-1 bg-[#e0e0e0] h-[18px] sm:h-[21px] rounded-br-[8px] rounded-tr-[8px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                          style={{ width: "65%" }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-['Pretendard:SemiBold',sans-serif] text-white text-[11px] sm:text-[12px] w-[60px]">
-                          Gemini
-                        </span>
-                        <div
-                          className="flex-1 bg-[#e0e0e0] h-[18px] sm:h-[21px] rounded-br-[8px] rounded-tr-[8px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
-                          style={{ width: "40%" }}
-                        />
-                      </div>
-                    </div>
+                    ) : usage && usage.modelUsage.length > 0 ? (
+                      <>
+                        {/* Horizontal bar chart */}
+                        <div className="space-y-4 mb-3">
+                          {usage.modelUsage.map((model, index) => (
+                            <div key={model.modelId} className="flex items-center gap-2">
+                              <span className="font-['Pretendard:SemiBold',sans-serif] text-white text-[11px] sm:text-[12px] w-[60px] truncate">
+                                {model.displayName}
+                              </span>
+                              <div
+                                className={`flex-1 h-[18px] sm:h-[21px] rounded-br-[8px] rounded-tr-[8px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] ${
+                                  index === 0 ? "bg-[#ff7600]" : "bg-[#e0e0e0]"
+                                }`}
+                                style={{ width: `${model.percentage}%` }}
+                              />
+                            </div>
+                          ))}
+                        </div>
 
-                    {/* X-axis labels */}
-                    <div className="flex justify-between pl-[68px] mt-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
-                      <span>0</span>
-                      <span>1K</span>
-                      <span>2K</span>
-                      <span>3K</span>
-                      <span>4K</span>
-                    </div>
+                        {/* X-axis labels */}
+                        <div className="flex justify-between pl-[68px] mt-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
+                          {(() => {
+                            const maxCoinUsed = Math.max(...usage.modelUsage.map(m => m.coinUsed));
+                            const step = Math.ceil(maxCoinUsed / 4 / 1000) * 1000;
+                            return [0, 1, 2, 3, 4].map(i => (
+                              <span key={i}>{i === 0 ? "0" : `${(step * i) / 1000}K`}</span>
+                            ));
+                          })()}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292]">데이터가 없습니다</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -440,36 +481,54 @@ export function Dashboard({ onClose }: DashboardProps) {
                       </div>
                     </div>
 
-                    {/* Chart container */}
-                    <div className="relative h-[180px] sm:h-[200px] w-full flex">
-                      {/* Y-axis labels */}
-                      <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
-                        <span>20k</span>
-                        <span>10k</span>
-                        <span>5k</span>
+                    {usageLoading ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292]">로딩 중...</p>
                       </div>
-
-                      {/* Chart */}
-                      <div className="flex-1 relative">
-                        <svg
-                          className="absolute inset-0 w-full h-full"
-                          fill="none"
-                          preserveAspectRatio="none"
-                          viewBox="0 0 350 144"
-                        >
-                          <path d={svgPathsMonthlyUsage.pdb717e8} stroke="#FF7600" strokeWidth="2" />
-                        </svg>
+                    ) : usageError ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-red-500">{usageError.message}</p>
                       </div>
-                    </div>
+                    ) : usage && usage.dailyUsage.length > 0 ? (
+                      <>
+                        {/* Chart container */}
+                        <div className="relative h-[180px] sm:h-[200px] w-full flex">
+                          {/* Y-axis labels */}
+                          <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
+                            {generateYAxisLabels(Math.max(...usage.dailyUsage.map(d => d.coinUsed))).map((label, i) => (
+                              <span key={i}>{label}</span>
+                            ))}
+                          </div>
 
-                    {/* X-axis labels */}
-                    <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
-                      <span>6월</span>
-                      <span>7월</span>
-                      <span>8월</span>
-                      <span>9월</span>
-                      <span>10월</span>
-                    </div>
+                          {/* Chart */}
+                          <div className="flex-1 relative">
+                            <svg
+                              className="absolute inset-0 w-full h-full"
+                              fill="none"
+                              preserveAspectRatio="none"
+                              viewBox="0 0 350 144"
+                            >
+                              <path
+                                d={createSVGPath(usage.dailyUsage, 350, 144)}
+                                stroke="#FF7600"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* X-axis labels */}
+                        <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
+                          {usage.dailyUsage.slice(0, 5).map((day, i) => (
+                            <span key={i}>{formatDateToMonth(day.date)}</span>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292]">데이터가 없습니다</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -534,7 +593,13 @@ export function Dashboard({ onClose }: DashboardProps) {
         )}
 
         {/* Pricing Content */}
-        {activeTab === "pricing" && <ModelPriceContent />}
+        {activeTab === "pricing" && (
+          <ModelPriceContent
+            models={models}
+            isLoading={modelsLoading}
+            error={modelsError}
+          />
+        )}
       </div>
     </div>
   );
