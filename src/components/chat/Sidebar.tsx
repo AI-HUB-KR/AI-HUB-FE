@@ -101,7 +101,7 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onC
           className="h-[57px] border-b border-[#2c2e30] relative w-full hover:bg-[#2c2e30] transition-colors"
         >
           <p className="absolute font-['Pretendard:Regular',sans-serif] leading-[normal] left-[calc(12.5%+2.75px)] not-italic text-[16px] text-neutral-100 text-nowrap top-[19px] whitespace-pre">
-            이번 달 AI 사용량 <span className="text-white text-[12px] ml-1">(임시)</span>
+            이번 달 AI 사용량 
           </p>
           <div className="absolute left-[5px] size-[30px] top-[13px]" data-name="bar-group-02">
             <div className="absolute flex inset-[12.5%] items-center justify-center">
