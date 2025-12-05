@@ -176,6 +176,9 @@ function PeriodDropdown({
 }
 
 function PriceCard({ model }: { model: ModelPricing }) {
+  // Average 계산: (input + output) / 2
+  const averagePrice = ((model?.inputPricePer1m ?? 0) + (model?.outputPricePer1m ?? 0)) / 2;
+
   return (
     <div className="relative rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
       <div className="p-4">
@@ -185,9 +188,9 @@ function PriceCard({ model }: { model: ModelPricing }) {
             className="text-[16px] text-white"
             style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
           >
-            {model.displayName}
+            {model?.displayName || 'Unknown Model'}
           </p>
-          {model.isActive ? (
+          {model?.isActive ? (
             <span className="inline-flex items-center rounded-full bg-gradient-to-b from-[#ff7600] to-[#ff983f] px-2 py-1 text-[11px] text-white">
               활성
             </span>
@@ -211,7 +214,7 @@ function PriceCard({ model }: { model: ModelPricing }) {
               className="text-[13px] text-white"
               style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
             >
-              ${model.inputPricePer1k.toFixed(4)}
+              ${(model?.inputPricePer1m ?? 0).toFixed(2)}
             </p>
           </div>
 
@@ -226,7 +229,7 @@ function PriceCard({ model }: { model: ModelPricing }) {
               className="text-[13px] text-white"
               style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
             >
-              ${model.outputPricePer1k.toFixed(4)}
+              ${(model?.outputPricePer1m ?? 0).toFixed(2)}
             </p>
           </div>
 
@@ -241,17 +244,17 @@ function PriceCard({ model }: { model: ModelPricing }) {
               className="text-[13px] text-[#ff7600]"
               style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
             >
-              ${model.averagePricePer1k.toFixed(4)}
+              ${averagePrice.toFixed(2)}
             </p>
           </div>
         </div>
 
-        {/* 1K 토큰당 표시 */}
+        {/* 1M 토큰당 표시 */}
         <p
           className="mt-2 text-right text-[10px] text-[#929292]"
           style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 400 }}
         >
-          per 1K tokens
+          per 1M tokens
         </p>
       </div>
     </div>
@@ -292,7 +295,7 @@ function ModelPriceContent({
         )}
 
         {/* 모델 리스트 */}
-        {!isLoading && !error && (
+        {!isLoading && !error && models && models.length > 0 ? (
           <>
             <div className="space-y-3">
               {models.map((model) => (
@@ -306,11 +309,15 @@ function ModelPriceContent({
                 className="text-center text-[12px] text-[#929292]"
                 style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 400 }}
               >
-                모든 가격은 USD 기준이며 1,000토큰당 가격입니다
+                모든 가격은 USD 기준이며 1M토큰당 가격입니다
               </p>
             </div>
           </>
-        )}
+        ) : !isLoading && !error ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-[#929292]">모델 정보가 없습니다</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

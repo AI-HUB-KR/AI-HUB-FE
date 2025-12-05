@@ -380,7 +380,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **인증**: Public (인증 불필요)
 - **응답 필드**:
   - modelId, modelName, displayName
-  - inputPricePer1k, outputPricePer1k, averagePricePer1k
+  - inputPricePer1k, inputPricePer1m, outputPricePer1m
   - isActive
 - **특징**:
   - Public API로 인증 없이 사용 가능
