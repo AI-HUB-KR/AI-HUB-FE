@@ -40,17 +40,30 @@ function createSVGPath(data: { date: string; coinUsed: number }[], width: number
 }
 
 // Y축 레이블 생성 헬퍼 함수
-function generateYAxisLabels(maxValue: number): string[] {
-  if (maxValue === 0) return ["0", "0", "0"];
+function generateYAxisLabels(maxValue: number, period: "monthly" | "weekly" = "monthly"): string[] {
+  if (maxValue === 0) return period === "weekly" ? ["0.5k", "0.25k", "0"] : ["0", "0", "0"];
 
-  const roundedMax = Math.ceil(maxValue / 1000) * 1000;
-  const step = roundedMax / 2;
+  if (period === "weekly") {
+    // Weekly: 더 촘촘한 스케일 (0.25k 간격)
+    const roundedMax = Math.max(Math.ceil(maxValue / 250) * 250, 500);
+    const step = roundedMax / 2;
 
-  return [
-    `${roundedMax / 1000}k`,
-    `${step / 1000}k`,
-    `${(step / 2) / 1000}k`
-  ];
+    return [
+      `${roundedMax / 1000}k`,
+      `${step / 1000}k`,
+      "0"
+    ];
+  } else {
+    // Monthly: 기존 스케일
+    const roundedMax = Math.ceil(maxValue / 1000) * 1000;
+    const step = roundedMax / 2;
+
+    return [
+      `${roundedMax / 1000}k`,
+      `${step / 1000}k`,
+      `${(step / 2) / 1000}k`
+    ];
+  }
 }
 
 // 날짜를 "M월" 형식으로 변환
@@ -183,6 +196,32 @@ function generateEmptyMonthlyData(): { date: string; coinUsed: number; messageCo
   }
 
   return emptyData;
+}
+
+// 최근 7일의 빈 일별 데이터 생성 (weekly용)
+function generateEmptyWeeklyData(): { date: string; coinUsed: number; messageCount: number }[] {
+  const now = new Date();
+  const emptyData: { date: string; coinUsed: number; messageCount: number }[] = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    emptyData.push({
+      date: dateStr,
+      coinUsed: 0,
+      messageCount: 0,
+    });
+  }
+
+  return emptyData;
+}
+
+// 날짜를 요일로 변환 (월, 화, 수, 목, 금, 토, 일)
+function formatDateToDayOfWeek(dateStr: string): string {
+  const date = new Date(dateStr);
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  return days[date.getDay()];
 }
 
 // 기간 선택 드롭다운 컴포넌트
@@ -559,16 +598,28 @@ export function Dashboard({ onClose }: DashboardProps) {
                         <div className="relative h-[180px] sm:h-[200px] w-full flex">
                           {(() => {
                             const hasData = usage.dailyUsage.length > 0;
-                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
-                            // 최근 5개월만 표시
-                            const displayData = sourceData.slice(-5);
+                            let sourceData;
+
+                            if (slide1Period === "weekly") {
+                              // Weekly: 최근 7일
+                              sourceData = hasData
+                                ? usage.dailyUsage.slice(-7)
+                                : generateEmptyWeeklyData();
+                            } else {
+                              // Monthly: 최근 5개월
+                              sourceData = hasData
+                                ? aggregateToMonthly(usage.dailyUsage).slice(-5)
+                                : generateEmptyMonthlyData();
+                            }
+
+                            const displayData = sourceData;
                             const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed), 1);
 
                             return (
                               <>
                                 {/* Y-axis labels */}
                                 <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
-                                  {generateYAxisLabels(maxCoinUsed).map((label, i) => (
+                                  {generateYAxisLabels(maxCoinUsed, slide1Period).map((label, i) => (
                                     <span key={i}>{label}</span>
                                   ))}
                                 </div>
@@ -607,10 +658,23 @@ export function Dashboard({ onClose }: DashboardProps) {
                         <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
                           {(() => {
                             const hasData = usage.dailyUsage.length > 0;
-                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
-                            const displayData = sourceData.slice(-5);
-                            return displayData.map((month, i) => (
-                              <span key={i}>{formatDateToMonth(month.date)}</span>
+                            let sourceData;
+
+                            if (slide1Period === "weekly") {
+                              sourceData = hasData
+                                ? usage.dailyUsage.slice(-7)
+                                : generateEmptyWeeklyData();
+                            } else {
+                              sourceData = hasData
+                                ? aggregateToMonthly(usage.dailyUsage).slice(-5)
+                                : generateEmptyMonthlyData();
+                            }
+
+                            const displayData = sourceData;
+                            const formatFunc = slide1Period === "weekly" ? formatDateToDayOfWeek : formatDateToMonth;
+
+                            return displayData.map((item, i) => (
+                              <span key={i}>{formatFunc(item.date)}</span>
                             ));
                           })()}
                         </div>
@@ -707,16 +771,28 @@ export function Dashboard({ onClose }: DashboardProps) {
                         <div className="relative h-[180px] sm:h-[200px] w-full flex">
                           {(() => {
                             const hasData = usage.dailyUsage.length > 0;
-                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
-                            // 최근 5개월만 표시
-                            const displayData = sourceData.slice(-5);
+                            let sourceData;
+
+                            if (slide3Period === "weekly") {
+                              // Weekly: 최근 7일
+                              sourceData = hasData
+                                ? usage.dailyUsage.slice(-7)
+                                : generateEmptyWeeklyData();
+                            } else {
+                              // Monthly: 최근 5개월
+                              sourceData = hasData
+                                ? aggregateToMonthly(usage.dailyUsage).slice(-5)
+                                : generateEmptyMonthlyData();
+                            }
+
+                            const displayData = sourceData;
                             const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed), 1);
 
                             return (
                               <>
                                 {/* Y-axis labels */}
                                 <div className="flex flex-col justify-between py-2 pr-2 text-white font-['Pretendard:SemiBold',sans-serif] text-[12px] sm:text-[14px]">
-                                  {generateYAxisLabels(maxCoinUsed).map((label, i) => (
+                                  {generateYAxisLabels(maxCoinUsed, slide3Period).map((label, i) => (
                                     <span key={i}>{label}</span>
                                   ))}
                                 </div>
@@ -755,10 +831,23 @@ export function Dashboard({ onClose }: DashboardProps) {
                         <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
                           {(() => {
                             const hasData = usage.dailyUsage.length > 0;
-                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
-                            const displayData = sourceData.slice(-5);
-                            return displayData.map((month, i) => (
-                              <span key={i}>{formatDateToMonth(month.date)}</span>
+                            let sourceData;
+
+                            if (slide3Period === "weekly") {
+                              sourceData = hasData
+                                ? usage.dailyUsage.slice(-7)
+                                : generateEmptyWeeklyData();
+                            } else {
+                              sourceData = hasData
+                                ? aggregateToMonthly(usage.dailyUsage).slice(-5)
+                                : generateEmptyMonthlyData();
+                            }
+
+                            const displayData = sourceData;
+                            const formatFunc = slide3Period === "weekly" ? formatDateToDayOfWeek : formatDateToMonth;
+
+                            return displayData.map((item, i) => (
+                              <span key={i}>{formatFunc(item.date)}</span>
                             ));
                           })()}
                         </div>
