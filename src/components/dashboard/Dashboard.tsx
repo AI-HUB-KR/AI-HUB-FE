@@ -59,6 +59,12 @@ function formatDateToMonth(dateStr: string): string {
   return `${date.getMonth() + 1}월`;
 }
 
+// 날짜를 "M/D" 형식으로 변환
+function formatDateToMD(dateStr: string): string {
+  const date = new Date(dateStr);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
 // 날짜를 "YYYY/MM/DD" 형식으로 변환
 function formatDateToYMD(dateStr: string): string {
   const date = new Date(dateStr);
@@ -128,6 +134,55 @@ function aggregateToWeekly(dailyData: { date: string; coinUsed: number; messageC
   }
 
   return weeklyData;
+}
+
+// 일별 데이터를 월별로 집계하는 헬퍼 함수
+function aggregateToMonthly(dailyData: { date: string; coinUsed: number; messageCount: number }[]): {
+  date: string;
+  coinUsed: number;
+  messageCount: number;
+}[] {
+  if (!dailyData || dailyData.length === 0) return [];
+
+  const monthlyMap = new Map<string, { coinUsed: number; messageCount: number }>();
+
+  dailyData.forEach((day) => {
+    const date = new Date(day.date);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+    if (!monthlyMap.has(monthKey)) {
+      monthlyMap.set(monthKey, { coinUsed: 0, messageCount: 0 });
+    }
+
+    const monthData = monthlyMap.get(monthKey)!;
+    monthData.coinUsed += day.coinUsed;
+    monthData.messageCount += day.messageCount;
+  });
+
+  // Map을 배열로 변환 (월 첫날을 date로 사용)
+  return Array.from(monthlyMap.entries()).map(([monthKey, data]) => ({
+    date: `${monthKey}-01`,
+    coinUsed: data.coinUsed,
+    messageCount: data.messageCount,
+  })).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// 최근 5개월의 빈 월별 데이터 생성 (데이터가 없을 때 사용)
+function generateEmptyMonthlyData(): { date: string; coinUsed: number; messageCount: number }[] {
+  const now = new Date();
+  const emptyData: { date: string; coinUsed: number; messageCount: number }[] = [];
+
+  for (let i = 4; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+    emptyData.push({
+      date: dateStr,
+      coinUsed: 0,
+      messageCount: 0,
+    });
+  }
+
+  return emptyData;
 }
 
 // 기간 선택 드롭다운 컴포넌트
@@ -214,9 +269,6 @@ function PeriodDropdown({
 }
 
 function PriceCard({ model }: { model: ModelPricing }) {
-  // Average 계산: (input + output) / 2
-  const averagePrice = ((model?.inputPricePer1m ?? 0) + (model?.outputPricePer1m ?? 0)) / 2;
-
   return (
     <div className="relative rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
       <div className="p-4">
@@ -252,7 +304,7 @@ function PriceCard({ model }: { model: ModelPricing }) {
               className="text-[13px] text-white"
               style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
             >
-              ${(model?.inputPricePer1m ?? 0).toFixed(2)}
+              ${(model?.inputPricePer1k ?? 0).toFixed(3)}
             </p>
           </div>
 
@@ -267,7 +319,7 @@ function PriceCard({ model }: { model: ModelPricing }) {
               className="text-[13px] text-white"
               style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
             >
-              ${(model?.outputPricePer1m ?? 0).toFixed(2)}
+              ${(model?.outputPricePer1k ?? 0).toFixed(3)}
             </p>
           </div>
 
@@ -282,17 +334,17 @@ function PriceCard({ model }: { model: ModelPricing }) {
               className="text-[13px] text-[#ff7600]"
               style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 600 }}
             >
-              ${averagePrice.toFixed(2)}
+              ${(model?.averagePricePer1k ?? 0).toFixed(3)}
             </p>
           </div>
         </div>
 
-        {/* 1M 토큰당 표시 */}
+        {/* 1K 토큰당 표시 */}
         <p
           className="mt-2 text-right text-[10px] text-[#929292]"
           style={{ fontFamily: "Pretendard, sans-serif", fontWeight: 400 }}
         >
-          per 1M tokens
+          per 1K tokens
         </p>
       </div>
     </div>
@@ -501,15 +553,16 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
                         <p className="text-red-500">{usageError.message}</p>
                       </div>
-                    ) : usage && usage.dailyUsage.length > 0 ? (
+                    ) : usage ? (
                       <>
                         {/* Chart container */}
                         <div className="relative h-[180px] sm:h-[200px] w-full flex">
                           {(() => {
-                            const displayData = slide1Period === "weekly"
-                              ? aggregateToWeekly(usage.dailyUsage)
-                              : usage.dailyUsage;
-                            const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed));
+                            const hasData = usage.dailyUsage.length > 0;
+                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
+                            // 최근 5개월만 표시
+                            const displayData = sourceData.slice(-5);
+                            const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed), 1);
 
                             return (
                               <>
@@ -532,8 +585,18 @@ export function Dashboard({ onClose }: DashboardProps) {
                                       d={createSVGPath(displayData, 340, 116)}
                                       stroke="#FF7600"
                                       strokeWidth="2"
+                                      opacity={hasData ? "1" : "0.3"}
                                     />
                                   </svg>
+
+                                  {/* 데이터 없을 때 오버레이 메시지 */}
+                                  {!hasData && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <p className="text-[#929292] text-[13px] sm:text-[15px] text-center px-4 font-['Pretendard:Regular',sans-serif]">
+                                        아직 사용 내역이 없습니다
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               </>
                             );
@@ -543,18 +606,18 @@ export function Dashboard({ onClose }: DashboardProps) {
                         {/* X-axis labels */}
                         <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
                           {(() => {
-                            const displayData = slide1Period === "weekly"
-                              ? aggregateToWeekly(usage.dailyUsage)
-                              : usage.dailyUsage;
-                            return displayData.slice(0, 5).map((day, i) => (
-                              <span key={i}>{formatDateToMonth(day.date)}</span>
+                            const hasData = usage.dailyUsage.length > 0;
+                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
+                            const displayData = sourceData.slice(-5);
+                            return displayData.map((month, i) => (
+                              <span key={i}>{formatDateToMonth(month.date)}</span>
                             ));
                           })()}
                         </div>
                       </>
                     ) : (
                       <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
-                        <p className="text-[#929292]">데이터가 없습니다</p>
+                        <p className="text-[#929292]">데이터를 불러올 수 없습니다</p>
                       </div>
                     )}
                   </div>
@@ -607,9 +670,15 @@ export function Dashboard({ onClose }: DashboardProps) {
                           })()}
                         </div>
                       </>
+                    ) : usage ? (
+                      <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
+                        <p className="text-[#929292] text-[13px] sm:text-[15px] text-center px-4 font-['Pretendard:Regular',sans-serif]">
+                          AI 모델을 사용하면 통계가 표시됩니다
+                        </p>
+                      </div>
                     ) : (
                       <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
-                        <p className="text-[#929292]">데이터가 없습니다</p>
+                        <p className="text-[#929292]">데이터를 불러올 수 없습니다</p>
                       </div>
                     )}
                   </div>
@@ -632,15 +701,16 @@ export function Dashboard({ onClose }: DashboardProps) {
                       <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
                         <p className="text-red-500">{usageError.message}</p>
                       </div>
-                    ) : usage && usage.dailyUsage.length > 0 ? (
+                    ) : usage ? (
                       <>
                         {/* Chart container */}
                         <div className="relative h-[180px] sm:h-[200px] w-full flex">
                           {(() => {
-                            const displayData = slide3Period === "weekly"
-                              ? aggregateToWeekly(usage.dailyUsage)
-                              : usage.dailyUsage;
-                            const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed));
+                            const hasData = usage.dailyUsage.length > 0;
+                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
+                            // 최근 5개월만 표시
+                            const displayData = sourceData.slice(-5);
+                            const maxCoinUsed = Math.max(...displayData.map(d => d.coinUsed), 1);
 
                             return (
                               <>
@@ -663,8 +733,18 @@ export function Dashboard({ onClose }: DashboardProps) {
                                       d={createSVGPath(displayData, 350, 144)}
                                       stroke="#FF7600"
                                       strokeWidth="2"
+                                      opacity={hasData ? "1" : "0.3"}
                                     />
                                   </svg>
+
+                                  {/* 데이터 없을 때 오버레이 메시지 */}
+                                  {!hasData && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <p className="text-[#929292] text-[13px] sm:text-[15px] text-center px-4 font-['Pretendard:Regular',sans-serif]">
+                                        아직 사용 내역이 없습니다
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               </>
                             );
@@ -674,18 +754,18 @@ export function Dashboard({ onClose }: DashboardProps) {
                         {/* X-axis labels */}
                         <div className="flex justify-between mt-2 px-8 text-white font-['Pretendard:SemiBold',sans-serif] text-[13px] sm:text-[16px]">
                           {(() => {
-                            const displayData = slide3Period === "weekly"
-                              ? aggregateToWeekly(usage.dailyUsage)
-                              : usage.dailyUsage;
-                            return displayData.slice(0, 5).map((day, i) => (
-                              <span key={i}>{formatDateToMonth(day.date)}</span>
+                            const hasData = usage.dailyUsage.length > 0;
+                            const sourceData = hasData ? aggregateToMonthly(usage.dailyUsage) : generateEmptyMonthlyData();
+                            const displayData = sourceData.slice(-5);
+                            return displayData.map((month, i) => (
+                              <span key={i}>{formatDateToMonth(month.date)}</span>
                             ));
                           })()}
                         </div>
                       </>
                     ) : (
                       <div className="flex items-center justify-center h-[180px] sm:h-[200px]">
-                        <p className="text-[#929292]">데이터가 없습니다</p>
+                        <p className="text-[#929292]">데이터를 불러올 수 없습니다</p>
                       </div>
                     )}
                   </div>
