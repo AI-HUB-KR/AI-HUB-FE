@@ -9,7 +9,9 @@ import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useMonthlyUsage } from "@/hooks/useMonthlyUsage";
 import { useModelsPricing } from "@/hooks/useModelsPricing";
 import { useInfiniteRooms } from "@/hooks/useRooms";
+import { useTransactions } from "@/hooks/useTransactions";
 import { ModelPricing } from "@/types/dashboard";
+import { TransactionType } from "@/types/transaction";
 
 interface DashboardProps {
   onClose: () => void;
@@ -64,6 +66,42 @@ function formatDateToYMD(dateStr: string): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}/${month}/${day}`;
+}
+
+// 거래 유형 한글 변환
+function getTransactionTypeLabel(type: TransactionType): string {
+  switch (type) {
+    case "purchase":
+      return "구매";
+    case "usage":
+      return "사용";
+    case "refund":
+      return "환불";
+    case "bonus":
+      return "보너스";
+    default:
+      return "기타";
+  }
+}
+
+// 거래 유형별 색상 반환
+function getTransactionTypeColor(type: TransactionType): {
+  bg: string;
+  text: string;
+  amount: string;
+} {
+  switch (type) {
+    case "purchase":
+      return { bg: "bg-green-600/20", text: "text-green-400", amount: "text-green-400" };
+    case "usage":
+      return { bg: "bg-red-600/20", text: "text-red-400", amount: "text-red-400" };
+    case "refund":
+      return { bg: "bg-blue-600/20", text: "text-blue-400", amount: "text-blue-400" };
+    case "bonus":
+      return { bg: "bg-[#ff7600]/20", text: "text-[#ff7600]", amount: "text-[#ff7600]" };
+    default:
+      return { bg: "bg-gray-600/20", text: "text-gray-400", amount: "text-gray-400" };
+  }
 }
 
 // 일별 데이터를 주별로 집계하는 헬퍼 함수
@@ -332,6 +370,9 @@ export function Dashboard({ onClose }: DashboardProps) {
   const [slide2Period, setSlide2Period] = useState<"monthly" | "weekly">("monthly");
   const [slide3Period, setSlide3Period] = useState<"monthly" | "weekly">("monthly");
 
+  // 거래 내역 필터 상태
+  const [currentPage, setCurrentPage] = useState(0);
+
   // API 훅 사용
   const { stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
   const { usage, isLoading: usageLoading, error: usageError } = useMonthlyUsage();
@@ -347,6 +388,20 @@ export function Dashboard({ onClose }: DashboardProps) {
     pageSize: 3, // 3개씩 로드
     sortField: "createdAt", // lastMessageAt은 null일 수 있어서 createdAt 사용
     sortDirection: "desc",
+  });
+
+  // 거래 내역 훅
+  const {
+    transactions,
+    isLoading: transactionsLoading,
+    error: transactionsError,
+    fetchTransactions,
+    refresh: refreshTransactions,
+  } = useTransactions({
+    page: currentPage,
+    size: 5,
+    transactionType: undefined,
+    autoFetch: true,
   });
 
   const paginate = (newDirection: number) => {
@@ -716,6 +771,112 @@ export function Dashboard({ onClose }: DashboardProps) {
               ) : (
                 <div className="flex items-center justify-center py-8">
                   <p className="text-[#929292]">채팅방이 없습니다</p>
+                </div>
+              )}
+            </div>
+
+            {/* 코인 거래 내역 Section */}
+            <div className="bg-[rgba(29,31,33,0.95)] rounded-[15px] p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-['Pretendard:SemiBold',sans-serif] text-neutral-100 text-[20px] sm:text-[24px]">
+                  코인 거래 내역
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={refreshTransactions}
+                    className="h-[27px] w-[27px] rounded-[4px] border border-[#929292] flex items-center justify-center hover:border-[#ff7600] transition-colors"
+                    title="새로고침"
+                  >
+                    <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24">
+                      <path
+                        d="M21 10C21 10 18.995 7.26822 17.3662 5.63824C15.7373 4.00827 13.4864 3 11 3C6.02944 3 2 7.02944 2 12C2 16.9706 6.02944 21 11 21C15.1031 21 18.5649 18.2543 19.6482 14.5M21 10V4M21 10H15"
+                        stroke="#F5F5F5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {transactionsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-[#929292]">로딩 중...</p>
+                </div>
+              ) : transactionsError ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-red-500">{transactionsError.message}</p>
+                </div>
+              ) : transactions && transactions.content.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-[1fr_2fr_1fr_1fr] gap-2 sm:gap-4 text-white font-['Pretendard:Regular',sans-serif] text-[13px] sm:text-[15px] px-2">
+                    <div>Date</div>
+                    <div>Description</div>
+                    <div className="text-right">Amount</div>
+                    <div className="text-right">Balance</div>
+                  </div>
+
+                  {/* Table Rows */}
+                  <div className="space-y-2">
+                    {transactions.content.map((transaction) => {
+                      const colors = getTransactionTypeColor(transaction.transactionType);
+                      const isPositive = transaction.amount > 0;
+
+                      return (
+                        <div
+                          key={transaction.transactionId}
+                          className="grid grid-cols-[1fr_2fr_1fr_1fr] gap-2 sm:gap-4 border border-[#444648] rounded-[8px] p-3 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] text-white font-['Pretendard:Regular',sans-serif] text-[11px] sm:text-[13px]"
+                        >
+                          <div className="truncate">
+                            {formatDateToYMD(transaction.createdAt)}
+                          </div>
+                          <div className="truncate">
+                            {transaction.description}
+                          </div>
+                          <div className={`text-right ${colors.amount}`}>
+                            {isPositive ? '+' : ''}{transaction.amount.toFixed(2)}$
+                          </div>
+                          <div className="text-right text-[#929292]">
+                            {transaction.balanceAfter.toFixed(2)}$
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* 페이지네이션 버튼 */}
+                    {transactions.totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                          onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+                          disabled={currentPage === 0}
+                          className="px-3 py-2 rounded-[4px] border border-[#444648] text-white text-[13px] hover:border-[#ff7600] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          이전
+                        </button>
+                        <span className="text-[#e0e0e0] text-[13px] font-['Pretendard:Regular',sans-serif]">
+                          {currentPage + 1} / {transactions.totalPages}
+                        </span>
+                        <button
+                          onClick={() => setCurrentPage((prev) => Math.min(transactions.totalPages - 1, prev + 1))}
+                          disabled={currentPage >= transactions.totalPages - 1}
+                          className="px-3 py-2 rounded-[4px] border border-[#444648] text-white text-[13px] hover:border-[#ff7600] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          다음
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 안내 텍스트 */}
+                  <p className="text-[#929292] text-[11px] sm:text-[12px] text-center mt-3 font-['Pretendard:Regular',sans-serif]">
+                    거래 금액은 달러($) 단위로 표시됩니다
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-[#929292]">거래 내역이 없습니다</p>
                 </div>
               )}
             </div>

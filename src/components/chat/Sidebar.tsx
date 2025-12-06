@@ -20,12 +20,13 @@ interface SidebarProps {
   onClose: () => void;
   onDashboardClick?: () => void;
   onBalanceClick?: () => void;
+  onHistoryClick?: () => void;
   onChatRoomClick?: (roomId: string) => void;
   onNewChatClick?: () => void;
   refreshTrigger?: number; // 이 값이 변경되면 채팅방 목록을 새로고침
 }
 
-export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onChatRoomClick, onNewChatClick, refreshTrigger }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onHistoryClick, onChatRoomClick, onNewChatClick, refreshTrigger }: SidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -172,6 +173,7 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onC
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
             onBalanceClick={onBalanceClick}
+            onHistoryClick={onHistoryClick}
           />
         </div>
       </div>

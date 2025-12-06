@@ -212,6 +212,10 @@ export function ChatLayout() {
           setShowBalance(true);
           setSidebarOpen(false);
         }}
+        onHistoryClick={() => {
+          setShowDashboard(true);
+          setSidebarOpen(false);
+        }}
         onChatRoomClick={handleChatRoomClick}
         onNewChatClick={() => {
           handleNewChat();
