@@ -234,6 +234,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/room.ts` - `UpdateChatRoomRequest`, `RoomDetail`
 - **API**: `src/lib/api/room.ts` - `updateChatRoom()`
 - **훅**: `src/hooks/useRoomDetail.ts` - `useRoomDetail().updateTitle()`
+- **UI 구현**: `src/components/chat/Sidebar.tsx`
 - **경로 변수**:
   - `roomId` (UUID)
 - **요청 필드**:
@@ -244,6 +245,13 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **특징**:
   - 수정 후 자동으로 상태 업데이트
   - 유효성 검사 포함
+- **UI 기능**:
+  - 채팅방 목록에서 호버 시 연필 아이콘 편집 버튼 표시
+  - 편집 버튼 클릭 시 인라인 편집 모드로 전환
+  - 입력 필드에서 Enter 키로 저장, Escape 키로 취소
+  - 저장(✓) 및 취소(✕) 버튼 제공
+  - 최대 30자 제한 및 빈 제목 방지
+  - 수정 성공 시 자동 목록 새로고침
 
 ### 3. AI 모델 목록 조회
 
