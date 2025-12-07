@@ -468,18 +468,8 @@ export function Dashboard({ onClose }: DashboardProps) {
                                       d={createSVGPath(displayData, 340, 116)}
                                       stroke="#FF7600"
                                       strokeWidth="2"
-                                      opacity={hasData ? "1" : "0.3"}
                                     />
                                   </svg>
-
-                                  {/* 데이터 없을 때 오버레이 메시지 */}
-                                  {!hasData && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <p className="text-[#929292] text-[13px] sm:text-[15px] text-center px-4 font-['Pretendard:Regular',sans-serif]">
-                                        아직 사용 내역이 없습니다
-                                      </p>
-                                    </div>
-                                  )}
                                 </div>
                               </>
                             );
@@ -621,18 +611,8 @@ export function Dashboard({ onClose }: DashboardProps) {
                                       d={createSVGPath(displayData, 350, 144)}
                                       stroke="#FF7600"
                                       strokeWidth="2"
-                                      opacity={hasData ? "1" : "0.3"}
                                     />
                                   </svg>
-
-                                  {/* 데이터 없을 때 오버레이 메시지 */}
-                                  {!hasData && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <p className="text-[#929292] text-[13px] sm:text-[15px] text-center px-4 font-['Pretendard:Regular',sans-serif]">
-                                        아직 사용 내역이 없습니다
-                                      </p>
-                                    </div>
-                                  )}
                                 </div>
                               </>
                             );
