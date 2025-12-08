@@ -4,7 +4,11 @@
       "Bash(pnpm add:*)",
       "Bash(npm run dev:*)",
       "Bash(npx tsc --noEmit)",
-      "Bash(pnpm run build)"
+      "Bash(pnpm run build)",
+      "Bash(npm audit:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm audit:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
