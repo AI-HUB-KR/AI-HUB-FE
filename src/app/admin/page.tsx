@@ -2,42 +2,32 @@
 
 import React, { useState } from "react";
 import svgPaths from "@/assets/svgs/admin";
+import { useModels } from "@/hooks/useModels";
+import { useModelDetail } from "@/hooks/useModelDetail";
 
 interface AIModelForm {
   modelName: string;
   displayName: string;
   displayExplain: string;
-  input_price_per_1m: string;
-  output_price_per_1m: string;
+  inputPricePer1k: string;
+  outputPricePer1k: string;
   isActive: string;
-}
-
-interface AIModel extends AIModelForm {
-  id: number;
 }
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"register" | "edit" | "delete">("register");
   const [formData, setFormData] = useState<AIModelForm>({
-    modelName: "gpt-4-turbo",
-    displayName: "GPT-4 Turbo",
-    displayExplain: "더 빠르고 저렴한 GPT-4",
-    input_price_per_1m: "0.01",
-    output_price_per_1m: "0.03",
+    modelName: "",
+    displayName: "",
+    displayExplain: "",
+    inputPricePer1k: "",
+    outputPricePer1k: "",
     isActive: "true",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock data for AI models list
-  const [aiModels, setAiModels] = useState<AIModel[]>([
-    { id: 1, modelName: "gpt-4-turbo", displayName: "GPT-4 turbo", displayExplain: "더빠르고저렴한GPT-4어쩌고...", input_price_per_1m: "0.01", output_price_per_1m: "0.03", isActive: "true" },
-    { id: 2, modelName: "claude-3-opus", displayName: "Claude 3 Opus", displayExplain: "가장 강력한 Claude 모델", input_price_per_1m: "0.015", output_price_per_1m: "0.075", isActive: "true" },
-    { id: 3, modelName: "gpt-3.5-turbo", displayName: "GPT-3.5 Turbo", displayExplain: "빠르고 경제적인 모델", input_price_per_1m: "0.0005", output_price_per_1m: "0.0015", isActive: "true" },
-    { id: 4, modelName: "gemini-pro", displayName: "Gemini Pro", displayExplain: "Google의 고성능 AI", input_price_per_1m: "0.00025", output_price_per_1m: "0.00075", isActive: "true" },
-    { id: 5, modelName: "claude-3-sonnet", displayName: "Claude 3 Sonnet", displayExplain: "균형잡힌 성능과 가격", input_price_per_1m: "0.003", output_price_per_1m: "0.015", isActive: "true" },
-    { id: 6, modelName: "gpt-4", displayName: "GPT-4", displayExplain: "OpenAI의 최고 성능 모델", input_price_per_1m: "0.03", output_price_per_1m: "0.06", isActive: "true" },
-    { id: 7, modelName: "claude-3-haiku", displayName: "Claude 3 Haiku", displayExplain: "가장 빠른 Claude 모델", input_price_per_1m: "0.00025", output_price_per_1m: "0.00125", isActive: "true" },
-    { id: 8, modelName: "llama-2-70b", displayName: "Llama 2 70B", displayExplain: "Meta의 오픈소스 모델", input_price_per_1m: "0.0007", output_price_per_1m: "0.0009", isActive: "true" },
-  ]);
+  // useModels 훅으로 API 연동
+  const { models, isLoading, error, createNewModel, refresh } = useModels();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState<AIModelForm | null>(null);
@@ -52,39 +42,61 @@ export default function AdminPage() {
     }
   };
 
-  const handleSubmit = () => {
-    // alert("AI 모델이 등록되었습니다!");
-    // Reset form
-    setFormData({
-      modelName: "",
-      displayName: "",
-      displayExplain: "",
-      input_price_per_1m: "",
-      output_price_per_1m: "",
-      isActive: "true",
-    });
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await createNewModel({
+        modelName: formData.modelName,
+        displayName: formData.displayName,
+        displayExplain: formData.displayExplain || undefined,
+        inputPricePer1k: parseFloat(formData.inputPricePer1k),
+        outputPricePer1k: parseFloat(formData.outputPricePer1k),
+        isActive: formData.isActive === "true",
+      });
+
+      alert("AI 모델이 등록되었습니다!");
+
+      // Reset form
+      setFormData({
+        modelName: "",
+        displayName: "",
+        displayExplain: "",
+        inputPricePer1k: "",
+        outputPricePer1k: "",
+        isActive: "true",
+      });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "모델 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEdit = (model: AIModel) => {
-    setEditingId(model.id);
-    setEditFormData({
-      modelName: model.modelName,
-      displayName: model.displayName,
-      displayExplain: model.displayExplain,
-      input_price_per_1m: model.input_price_per_1m,
-      output_price_per_1m: model.output_price_per_1m,
-      isActive: model.isActive,
-    });
+  const handleEdit = (modelId: number) => {
+    setEditingId(modelId);
+    const model = models.find(m => m.modelId === modelId);
+    if (model) {
+      setEditFormData({
+        modelName: model.modelName,
+        displayName: model.displayName,
+        displayExplain: model.displayExplain,
+        inputPricePer1k: model.inputPricePer1k.toString(),
+        outputPricePer1k: model.outputPricePer1k.toString(),
+        isActive: model.isActive.toString(),
+      });
+    }
   };
 
-  const handleSaveEdit = (id: number) => {
-    if (editFormData) {
-      setAiModels(aiModels.map(model =>
-        model.id === id ? { ...model, ...editFormData } : model
-      ));
+  const handleSaveEdit = async (modelId: number) => {
+    if (!editFormData) return;
+
+    try {
+      // TODO: 모델 수정 API 연동 (useModelDetail 사용)
+      alert("모델 수정 기능은 준비 중입니다.");
       setEditingId(null);
       setEditFormData(null);
-      alert("AI 모델이 수정되었습니다!");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "모델 수정에 실패했습니다.");
     }
   };
 
@@ -171,7 +183,7 @@ export default function AdminPage() {
           <div className="max-w-[1200px] mx-auto space-y-6 sm:space-y-8">
             {/* modelName */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 sm:gap-4 lg:gap-8">
-              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[24px] sm:text-[28px] lg:text-[36px] lg:w-[400px]">
+              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] lg:w-[400px]">
                 modelName
               </label>
               <div className="flex-1 relative">
@@ -181,7 +193,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     handleInputChange("modelName", e.target.value)
                   }
-                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[18px] sm:text-[20px] lg:text-[24px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
+                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
                   placeholder="예: gpt-4-turbo"
                 />
               </div>
@@ -189,7 +201,7 @@ export default function AdminPage() {
 
             {/* displayName */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 sm:gap-4 lg:gap-8">
-              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[24px] sm:text-[28px] lg:text-[36px] lg:w-[400px]">
+              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] lg:w-[400px]">
                 displayName
               </label>
               <div className="flex-1 relative">
@@ -199,7 +211,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     handleInputChange("displayName", e.target.value)
                   }
-                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[18px] sm:text-[20px] lg:text-[24px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
+                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
                   placeholder="예: GPT-4 Turbo"
                 />
               </div>
@@ -207,7 +219,7 @@ export default function AdminPage() {
 
             {/* displayExplain */}
             <div className="flex flex-col lg:flex-row lg:items-start gap-3 sm:gap-4 lg:gap-8">
-              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[24px] sm:text-[28px] lg:text-[36px] lg:w-[400px]">
+              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] lg:w-[400px]">
                 displayExplain
               </label>
               <div className="flex-1 relative">
@@ -217,7 +229,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     handleInputChange("displayExplain", e.target.value)
                   }
-                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[18px] sm:text-[20px] lg:text-[24px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
+                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
                   placeholder="예: 더 빠르고 저렴한 GPT-4"
                 />
                 <p className="flex items-center gap-2 mt-2 font-['Pretendard:Regular',sans-serif] text-[#fe2828] text-[12px] sm:text-[14px] lg:text-[16px]">
@@ -234,29 +246,30 @@ export default function AdminPage() {
                       strokeWidth="2"
                     />
                   </svg>
-                  50자 내외로 작성해주세요.
+                  200자 이하로 작성해주세요.
                 </p>
               </div>
             </div>
 
-            {/* 1백만 input 토큰 당 가격 */}
+            {/* 1천 input 토큰 당 가격 */}
             <div className="flex flex-col lg:flex-row lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className="lg:w-[400px]">
-                <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[24px] sm:text-[28px] lg:text-[36px] block">
-                  1백만 input 토큰 당 가격
+                <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] block">
+                  1천 input 토큰 당 가격
                 </label>
-                <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[18px] sm:text-[20px] lg:text-[24px] mt-2">
-                  input_price_per_1m
+                <p className="font-['Pretendard:Regular',sans-serif] text-[#929292] text-[14px] sm:text-[16px] mt-1">
+                  inputPricePer1k
                 </p>
               </div>
               <div className="flex-1 relative">
                 <input
-                  type="text"
-                  value={formData.input_price_per_1m}
+                  type="number"
+                  step="0.000001"
+                  value={formData.inputPricePer1k}
                   onChange={(e) =>
-                    handleInputChange("input_price_per_1m", e.target.value)
+                    handleInputChange("inputPricePer1k", e.target.value)
                   }
-                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[18px] sm:text-[20px] lg:text-[24px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
+                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
                   placeholder="예: 0.01"
                 />
                 <p className="flex items-center gap-2 mt-2 font-['Pretendard:Regular',sans-serif] text-[#fe2828] text-[12px] sm:text-[14px] lg:text-[16px]">
@@ -273,29 +286,30 @@ export default function AdminPage() {
                       strokeWidth="2"
                     />
                   </svg>
-                  api문서에 써있는 1M 당 가격 쓰세요
+                  USD 가격 (0 이상)
                 </p>
               </div>
             </div>
 
-            {/* 1백만 output 토큰 당 가격 */}
+            {/* 1천 output 토큰 당 가격 */}
             <div className="flex flex-col lg:flex-row lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className="lg:w-[400px]">
-                <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[24px] sm:text-[28px] lg:text-[36px] block">
-                  1백만 output 토큰 당 가격
+                <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] block">
+                  1천 output 토큰 당 가격
                 </label>
-                <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[18px] sm:text-[20px] lg:text-[24px] mt-2">
-                  output_price_per_1m
+                <p className="font-['Pretendard:Regular',sans-serif] text-[#929292] text-[14px] sm:text-[16px] mt-1">
+                  outputPricePer1k
                 </p>
               </div>
               <div className="flex-1 relative">
                 <input
-                  type="text"
-                  value={formData.output_price_per_1m}
+                  type="number"
+                  step="0.000001"
+                  value={formData.outputPricePer1k}
                   onChange={(e) =>
-                    handleInputChange("output_price_per_1m", e.target.value)
+                    handleInputChange("outputPricePer1k", e.target.value)
                   }
-                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[18px] sm:text-[20px] lg:text-[24px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
+                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
                   placeholder="예: 0.03"
                 />
                 <p className="flex items-center gap-2 mt-2 font-['Pretendard:Regular',sans-serif] text-[#fe2828] text-[12px] sm:text-[14px] lg:text-[16px]">
@@ -312,14 +326,14 @@ export default function AdminPage() {
                       strokeWidth="2"
                     />
                   </svg>
-                  api문서에 써있는 1M 당 가격 쓰세요.
+                  USD 가격 (0 이상)
                 </p>
               </div>
             </div>
 
             {/* isActive */}
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 sm:gap-4 lg:gap-8">
-              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[24px] sm:text-[28px] lg:text-[36px] lg:w-[400px]">
+              <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] lg:w-[400px]">
                 isActive
               </label>
               <div className="flex-1 relative">
@@ -328,7 +342,7 @@ export default function AdminPage() {
                   onChange={(e) =>
                     handleInputChange("isActive", e.target.value)
                   }
-                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-zinc-900 border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[18px] sm:text-[20px] lg:text-[24px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
+                  className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-zinc-900 border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
                 >
                   <option value="true">true</option>
                   <option value="false">false</option>
@@ -340,9 +354,10 @@ export default function AdminPage() {
             <div className="flex justify-center pt-6 sm:pt-8">
               <button
                 onClick={handleSubmit}
-                className="bg-gradient-to-b from-[#ff7600] from-[29.808%] to-[#ff983f] h-[48px] sm:h-[53px] px-12 sm:px-16 rounded-[7px] font-['Pretendard:SemiBold',sans-serif] text-white text-[18px] sm:text-[20px] lg:text-[24px] hover:opacity-90 transition-opacity"
+                disabled={isSubmitting}
+                className="bg-gradient-to-b from-[#ff7600] from-[29.808%] to-[#ff983f] h-[48px] sm:h-[53px] px-12 sm:px-16 rounded-[7px] font-['Pretendard:SemiBold',sans-serif] text-white text-[18px] sm:text-[20px] lg:text-[24px] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                등록하기
+                {isSubmitting ? "등록 중..." : "등록하기"}
               </button>
             </div>
           </div>
@@ -351,40 +366,52 @@ export default function AdminPage() {
         {/* Edit Table */}
         {activeTab === "edit" && (
           <div className="w-full">
-            {/* Table */}
-            <div className="overflow-x-auto flex justify-center">
-              <div className="min-w-[1200px] max-w-[1400px]">
-                {/* Table Header */}
-                <div className="grid grid-cols-[150px_150px_320px_140px_140px_140px_auto] gap-3 mb-6 px-2">
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
-                    modelName
-                  </p>
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
-                    displayName
-                  </p>
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
-                    displayExplain
-                  </p>
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
-                    input_price
-                  </p>
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
-                    output_price
-                  </p>
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
-                    isActive
-                  </p>
-                  <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]"></p>
-                </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-[400px]">
+                <p className="font-['Pretendard:Regular',sans-serif] text-white text-[20px]">
+                  로딩 중...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="flex justify-center items-center h-[400px]">
+                <p className="font-['Pretendard:Regular',sans-serif] text-red-500 text-[20px]">
+                  {error.message}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto flex justify-center">
+                <div className="min-w-[1200px] max-w-[1400px]">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-[150px_150px_320px_140px_140px_140px_auto] gap-3 mb-6 px-2">
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
+                      modelName
+                    </p>
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
+                      displayName
+                    </p>
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
+                      displayExplain
+                    </p>
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
+                      input_price
+                    </p>
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
+                      output_price
+                    </p>
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]">
+                      isActive
+                    </p>
+                    <p className="font-['Pretendard:SemiBold',sans-serif] text-white text-[14px] sm:text-[16px]"></p>
+                  </div>
 
-                {/* Table Rows */}
-                <div className="space-y-3">
-                  {aiModels.map((model) => (
-                    <div
-                      key={model.id}
-                      className="grid grid-cols-[150px_150px_320px_140px_140px_140px_auto] gap-3 items-center"
-                    >
-                      {editingId === model.id && editFormData ? (
+                  {/* Table Rows */}
+                  <div className="space-y-3">
+                    {models.map((model) => (
+                      <div
+                        key={model.modelId}
+                        className="grid grid-cols-[150px_150px_320px_140px_140px_140px_auto] gap-3 items-center"
+                      >
+                        {editingId === model.modelId && editFormData ? (
                         <>
                           {/* Editing Mode */}
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#ff7600] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
@@ -428,11 +455,12 @@ export default function AdminPage() {
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#ff7600] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <input
-                              type="text"
-                              value={editFormData.input_price_per_1m}
+                              type="number"
+                              step="0.000001"
+                              value={editFormData.inputPricePer1k}
                               onChange={(e) =>
                                 handleEditInputChange(
-                                  "input_price_per_1m",
+                                  "inputPricePer1k",
                                   e.target.value
                                 )
                               }
@@ -441,11 +469,12 @@ export default function AdminPage() {
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#ff7600] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <input
-                              type="text"
-                              value={editFormData.output_price_per_1m}
+                              type="number"
+                              step="0.000001"
+                              value={editFormData.outputPricePer1k}
                               onChange={(e) =>
                                 handleEditInputChange(
-                                  "output_price_per_1m",
+                                  "outputPricePer1k",
                                   e.target.value
                                 )
                               }
@@ -469,7 +498,7 @@ export default function AdminPage() {
                           </div>
                           <div className="flex gap-2 flex-nowrap whitespace-nowrap">
                             <button
-                              onClick={() => handleSaveEdit(model.id)}
+                              onClick={() => handleSaveEdit(model.modelId)}
                               className="bg-gradient-to-b from-[#ff7600] from-[29.808%] to-[#ff983f] h-[22px] px-3 rounded-[7px] font-['Pretendard:Regular',sans-serif] text-white text-[12px] sm:text-[14px] hover:opacity-90 transition-opacity flex-shrink-0"
                             >
                               저장
@@ -502,21 +531,21 @@ export default function AdminPage() {
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <p className="font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white truncate">
-                              {model.input_price_per_1m}
+                              {model.inputPricePer1k}
                             </p>
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <p className="font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white truncate">
-                              {model.output_price_per_1m}
+                              {model.outputPricePer1k}
                             </p>
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <p className="font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white truncate">
-                              {model.isActive}
+                              {model.isActive ? "true" : "false"}
                             </p>
                           </div>
                           <button
-                            onClick={() => handleEdit(model)}
+                            onClick={() => handleEdit(model.modelId)}
                             className="bg-gradient-to-b from-[#ff7600] from-[29.808%] to-[#ff983f] h-[22px] w-[6.8rem] rounded-[7px] font-['Pretendard:Regular',sans-serif] text-white text-[14px] sm:text-[16px] hover:opacity-90 transition-opacity"
                           >
                             수정
@@ -528,6 +557,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
 

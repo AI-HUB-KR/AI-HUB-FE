@@ -161,8 +161,8 @@ export async function createModel(
         modelName,
         displayName,
         displayExplain,
-        inputPricePer1k,
-        outputPricePer1k,
+        inputPricePer1m: inputPricePer1k,
+        outputPricePer1m: outputPricePer1k,
         isActive,
       }),
     });

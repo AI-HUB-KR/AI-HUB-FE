@@ -304,6 +304,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/model.ts` - `CreateModelRequest`, `AIModelDetail`
 - **API**: `src/lib/api/model.ts` - `createModel()`
 - **훅**: `src/hooks/useModels.ts` - `useModels().createNewModel()`
+- **UI 구현**: `src/app/admin/page.tsx` (AI 모델 등록 탭)
 - **인증**: 관리자 권한 (쿠키 기반)
 - **요청 필드**:
   - `modelName` (필수, 소문자, 하이픈 허용)
@@ -320,6 +321,13 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 관리자 권한 필수
   - 등록 후 자동으로 목록 새로고침
   - 유효성 검사 포함
+- **UI 기능**:
+  - http://localhost:3001/admin 페이지에서 "AI모델 등록" 탭 제공
+  - 모델 식별자, 표시 이름, 설명, 가격, 활성화 여부 입력 폼
+  - 등록 진행 중 로딩 상태 표시 ("등록 중...")
+  - 등록 성공 시 폼 자동 초기화 및 알림
+  - 에러 발생 시 에러 메시지 표시
+  - 필드별 유효성 검사 안내 메시지 제공
 
 ### 3-3. [관리자] AI 모델 수정
 
