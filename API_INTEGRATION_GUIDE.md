@@ -221,12 +221,22 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **훅**: `src/hooks/useRooms.ts`
   - `useRooms().deleteRoom()`: 일반 페이지네이션용
   - `useInfiniteRooms().deleteRoom()`: 무한 스크롤용
+- **UI 구현**: `src/components/chat/Sidebar.tsx`
+- **인증**: 필수 (쿠키 기반)
 - **경로 변수**:
   - `roomId` (UUID)
 - **응답**: 204 No Content
 - **특징**:
   - 연관 메시지도 함께 삭제
   - 삭제 후 자동으로 목록 새로고침
+  - 에러 처리 포함 (권한 없음, 채팅방 없음 등)
+- **UI 기능**:
+  - 채팅방 목록에서 호버 시 삭제 버튼 표시 (휴지통 아이콘)
+  - 편집 버튼과 삭제 버튼이 함께 표시됨
+  - 삭제 버튼 클릭 시 확인 다이얼로그 표시
+  - "채팅방을 삭제하시겠습니까? 삭제된 채팅방과 메시지는 복구할 수 없습니다." 안내
+  - 삭제 진행 중 로딩 스피너 표시
+  - 삭제 성공 시 자동으로 목록 새로고침
 
 ### 2-3. 채팅방 제목 수정
 

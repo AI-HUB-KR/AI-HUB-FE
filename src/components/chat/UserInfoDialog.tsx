@@ -17,7 +17,7 @@ interface UserInfoDialogProps {
 }
 
 export function UserInfoDialog({ isOpen, onClose }: UserInfoDialogProps) {
-  const { user, isLoading, error, fetchUser, updateUser, deleteUser } = useCurrentUser({
+  const { user, isLoading, error, fetchUser, updateUser } = useCurrentUser({
     autoFetch: false,
   });
 
@@ -25,7 +25,6 @@ export function UserInfoDialog({ isOpen, onClose }: UserInfoDialogProps) {
   const [editUsername, setEditUsername] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // 모달이 열릴 때 사용자 정보 조회
   useEffect(() => {
@@ -72,29 +71,6 @@ export function UserInfoDialog({ isOpen, onClose }: UserInfoDialogProps) {
       alert(errorMessage);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  // 회원 탈퇴
-  const handleDelete = async () => {
-    const confirmed = window.confirm(
-      "정말로 회원 탈퇴하시겠습니까?\n탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다."
-    );
-
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteUser();
-      alert("회원 탈퇴가 완료되었습니다.");
-      onClose();
-      // 탈퇴 후 로그인 페이지로 이동
-      window.location.href = "/login";
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다.";
-      alert(errorMessage);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -221,13 +197,6 @@ export function UserInfoDialog({ isOpen, onClose }: UserInfoDialogProps) {
             </>
           ) : (
             <>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="px-5 py-3 bg-red-600 text-white text-base rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 sm:mr-auto"
-              >
-                {isDeleting ? "탈퇴 중..." : "회원 탈퇴"}
-              </button>
               <button
                 onClick={onClose}
                 className="px-5 py-3 bg-[#3c3e40] text-neutral-100 text-base rounded-lg hover:bg-[#4c4e50] transition-colors"

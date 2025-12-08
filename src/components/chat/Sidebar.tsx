@@ -147,7 +147,11 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
           <p className="absolute font-['Pretendard:SemiBold',sans-serif] leading-[normal] left-[5rem] not-italic text-[#ff7600] text-[16px] text-nowrap top-[1.7rem] whitespace-pre">
             new 채팅
           </p>
-          <img src="/pencil.svg" alt="pencil" className="absolute left-[7px] top-[10px]" />
+          <img
+            src="/pencil.svg"
+            alt="pencil"
+            className="absolute left-[7px] top-[10px]"
+          />
         </button>
 
         {/* AI Usage Section */}
@@ -156,15 +160,37 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
           className="h-[57px] border-b border-[#2c2e30] relative w-full hover:bg-[#2c2e30] transition-colors"
         >
           <p className="absolute font-['Pretendard:Regular',sans-serif] leading-[normal] left-[calc(12.5%+2.75px)] not-italic text-[16px] text-neutral-100 text-nowrap top-[19px] whitespace-pre">
-            이번 달 AI 사용량 
+            이번 달 AI 사용량
           </p>
-          <div className="absolute left-[5px] size-[30px] top-[13px]" data-name="bar-group-02">
+          <div
+            className="absolute left-[5px] size-[30px] top-[13px]"
+            data-name="bar-group-02"
+          >
             <div className="absolute flex inset-[12.5%] items-center justify-center">
               <div className="flex-none rotate-[180deg] scale-y-[-100%] size-[18px]">
                 <div className="relative size-full" data-name="Icon">
-                  <div className="absolute inset-[-4.444%]" style={{ "--stroke-0": "rgba(245, 245, 245, 1)" } as React.CSSProperties}>
-                    <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 25 25">
-                      <path d={svgPathsSidebar.p1c82b380} id="Icon" stroke="var(--stroke-0, #F5F5F5)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                  <div
+                    className="absolute inset-[-4.444%]"
+                    style={
+                      {
+                        "--stroke-0": "rgba(245, 245, 245, 1)",
+                      } as React.CSSProperties
+                    }
+                  >
+                    <svg
+                      className="block size-full"
+                      fill="none"
+                      preserveAspectRatio="none"
+                      viewBox="0 0 25 25"
+                    >
+                      <path
+                        d={svgPathsSidebar.p1c82b380}
+                        id="Icon"
+                        stroke="var(--stroke-0, #F5F5F5)"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -172,10 +198,28 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
             </div>
           </div>
           <div className="absolute left-[28px] size-[10px] top-[35px]">
-            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 10 10">
-              <circle cx="5" cy="5" fill="url(#paint0_linear_1_238)" id="Ellipse 2" r="5" />
+            <svg
+              className="block size-full"
+              fill="none"
+              preserveAspectRatio="none"
+              viewBox="0 0 10 10"
+            >
+              <circle
+                cx="5"
+                cy="5"
+                fill="url(#paint0_linear_1_238)"
+                id="Ellipse 2"
+                r="5"
+              />
               <defs>
-                <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_1_238" x1="5" x2="5" y1="0" y2="10">
+                <linearGradient
+                  gradientUnits="userSpaceOnUse"
+                  id="paint0_linear_1_238"
+                  x1="5"
+                  x2="5"
+                  y1="0"
+                  y2="10"
+                >
                   <stop stopColor="#FF983F" />
                   <stop offset="1" stopColor="#FF983F" />
                 </linearGradient>
@@ -207,7 +251,10 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
               <div
                 key={room.roomId}
                 className="h-[45px] relative hover:bg-[#2c2e30] cursor-pointer group"
-                onClick={() => editingRoomId !== room.roomId && onChatRoomClick?.(room.roomId)}
+                onClick={() =>
+                  editingRoomId !== room.roomId &&
+                  onChatRoomClick?.(room.roomId)
+                }
               >
                 {editingRoomId === room.roomId ? (
                   // 편집 모드: 입력 필드
@@ -230,7 +277,10 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
                       ✓
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancelEdit();
+                      }}
                       className="text-[#929292] hover:text-neutral-100 text-[12px]"
                       title="취소"
                     >
@@ -248,13 +298,29 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
                     </p>
                     {/* 편집 버튼 (호버 시 표시) */}
                     <button
-                      onClick={(e) => handleStartEdit(room.roomId, room.title, e)}
+                      onClick={(e) =>
+                        handleStartEdit(room.roomId, room.title, e)
+                      }
                       className="absolute right-[17px] top-[13px] w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       title="제목 수정"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="#929292" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="#929292"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     </button>
                   </>
