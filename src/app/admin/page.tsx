@@ -3,14 +3,14 @@
 import React, { useState } from "react";
 import svgPaths from "@/assets/svgs/admin";
 import { useModels } from "@/hooks/useModels";
-import { useModelDetail } from "@/hooks/useModelDetail";
+import { updateModel } from "@/lib/api/model";
 
 interface AIModelForm {
   modelName: string;
   displayName: string;
   displayExplain: string;
-  inputPricePer1k: string;
-  outputPricePer1k: string;
+  inputPricePer1m: string;
+  outputPricePer1m: string;
   isActive: string;
 }
 
@@ -20,8 +20,8 @@ export default function AdminPage() {
     modelName: "",
     displayName: "",
     displayExplain: "",
-    inputPricePer1k: "",
-    outputPricePer1k: "",
+    inputPricePer1m: "",
+    outputPricePer1m: "",
     isActive: "true",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,8 +49,8 @@ export default function AdminPage() {
         modelName: formData.modelName,
         displayName: formData.displayName,
         displayExplain: formData.displayExplain || undefined,
-        inputPricePer1k: parseFloat(formData.inputPricePer1k),
-        outputPricePer1k: parseFloat(formData.outputPricePer1k),
+        inputPricePer1m: parseFloat(formData.inputPricePer1m),
+        outputPricePer1m: parseFloat(formData.outputPricePer1m),
         isActive: formData.isActive === "true",
       });
 
@@ -61,8 +61,8 @@ export default function AdminPage() {
         modelName: "",
         displayName: "",
         displayExplain: "",
-        inputPricePer1k: "",
-        outputPricePer1k: "",
+        inputPricePer1m: "",
+        outputPricePer1m: "",
         isActive: "true",
       });
     } catch (error) {
@@ -77,12 +77,12 @@ export default function AdminPage() {
     const model = models.find(m => m.modelId === modelId);
     if (model) {
       setEditFormData({
-        modelName: model.modelName,
-        displayName: model.displayName,
-        displayExplain: model.displayExplain,
-        inputPricePer1k: model.inputPricePer1k.toString(),
-        outputPricePer1k: model.outputPricePer1k.toString(),
-        isActive: model.isActive.toString(),
+        modelName: model.modelName || "",
+        displayName: model.displayName || "",
+        displayExplain: model.displayExplain || "",
+        inputPricePer1m: (model.inputPricePer1m ?? 0).toString(),
+        outputPricePer1m: (model.outputPricePer1m ?? 0).toString(),
+        isActive: (model.isActive ?? true).toString(),
       });
     }
   };
@@ -91,10 +91,20 @@ export default function AdminPage() {
     if (!editFormData) return;
 
     try {
-      // TODO: 모델 수정 API 연동 (useModelDetail 사용)
-      alert("모델 수정 기능은 준비 중입니다.");
+      await updateModel(modelId, {
+        displayName: editFormData.displayName,
+        displayExplain: editFormData.displayExplain,
+        inputPricePer1m: parseFloat(editFormData.inputPricePer1m),
+        outputPricePer1m: parseFloat(editFormData.outputPricePer1m),
+        isActive: editFormData.isActive === "true",
+      });
+
+      alert("AI 모델이 수정되었습니다!");
+
+      // 수정 후 편집 모드 종료 및 목록 새로고침
       setEditingId(null);
       setEditFormData(null);
+      await refresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : "모델 수정에 실패했습니다.");
     }
@@ -251,26 +261,26 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* 1천 input 토큰 당 가격 */}
+            {/* 1백만 input 토큰 당 가격 */}
             <div className="flex flex-col lg:flex-row lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className="lg:w-[400px]">
                 <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] block">
-                  1천 input 토큰 당 가격
+                  1백만 input 토큰 당 가격
                 </label>
                 <p className="font-['Pretendard:Regular',sans-serif] text-[#929292] text-[14px] sm:text-[16px] mt-1">
-                  inputPricePer1k
+                  input_price_per_1m
                 </p>
               </div>
               <div className="flex-1 relative">
                 <input
                   type="number"
                   step="0.000001"
-                  value={formData.inputPricePer1k}
+                  value={formData.inputPricePer1m}
                   onChange={(e) =>
-                    handleInputChange("inputPricePer1k", e.target.value)
+                    handleInputChange("inputPricePer1m", e.target.value)
                   }
                   className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
-                  placeholder="예: 0.01"
+                  placeholder="예: 10"
                 />
                 <p className="flex items-center gap-2 mt-2 font-['Pretendard:Regular',sans-serif] text-[#fe2828] text-[12px] sm:text-[14px] lg:text-[16px]">
                   <svg
@@ -291,26 +301,26 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* 1천 output 토큰 당 가격 */}
+            {/* 1백만 output 토큰 당 가격 */}
             <div className="flex flex-col lg:flex-row lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className="lg:w-[400px]">
                 <label className="font-['Pretendard:SemiBold',sans-serif] text-white text-[16px] sm:text-[18px] lg:text-[20px] block">
-                  1천 output 토큰 당 가격
+                  1백만 output 토큰 당 가격
                 </label>
                 <p className="font-['Pretendard:Regular',sans-serif] text-[#929292] text-[14px] sm:text-[16px] mt-1">
-                  outputPricePer1k
+                  output_price_per_1m
                 </p>
               </div>
               <div className="flex-1 relative">
                 <input
                   type="number"
                   step="0.000001"
-                  value={formData.outputPricePer1k}
+                  value={formData.outputPricePer1m}
                   onChange={(e) =>
-                    handleInputChange("outputPricePer1k", e.target.value)
+                    handleInputChange("outputPricePer1m", e.target.value)
                   }
                   className="w-full h-[40px] sm:h-[46px] rounded-[8px] bg-transparent border border-[#444648] px-4 sm:px-6 font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] focus:outline-none focus:border-[#ff7600]"
-                  placeholder="예: 0.03"
+                  placeholder="예: 20"
                 />
                 <p className="flex items-center gap-2 mt-2 font-['Pretendard:Regular',sans-serif] text-[#fe2828] text-[12px] sm:text-[14px] lg:text-[16px]">
                   <svg
@@ -457,10 +467,10 @@ export default function AdminPage() {
                             <input
                               type="number"
                               step="0.000001"
-                              value={editFormData.inputPricePer1k}
+                              value={editFormData.inputPricePer1m}
                               onChange={(e) =>
                                 handleEditInputChange(
-                                  "inputPricePer1k",
+                                  "inputPricePer1m",
                                   e.target.value
                                 )
                               }
@@ -471,10 +481,10 @@ export default function AdminPage() {
                             <input
                               type="number"
                               step="0.000001"
-                              value={editFormData.outputPricePer1k}
+                              value={editFormData.outputPricePer1m}
                               onChange={(e) =>
                                 handleEditInputChange(
-                                  "outputPricePer1k",
+                                  "outputPricePer1m",
                                   e.target.value
                                 )
                               }
@@ -531,12 +541,12 @@ export default function AdminPage() {
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <p className="font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white truncate">
-                              {model.inputPricePer1k}
+                              {model.inputPricePer1m}
                             </p>
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">
                             <p className="font-['Pretendard:Regular',sans-serif] text-[16px] sm:text-[18px] lg:text-[20px] text-white truncate">
-                              {model.outputPricePer1k}
+                              {model.outputPricePer1m}
                             </p>
                           </div>
                           <div className="h-[40px] sm:h-[46px] rounded-[8px] border border-[#444648] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] flex items-center px-3">

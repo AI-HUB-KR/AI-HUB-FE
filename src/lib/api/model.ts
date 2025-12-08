@@ -120,8 +120,8 @@ export async function createModel(
     modelName,
     displayName,
     displayExplain,
-    inputPricePer1k,
-    outputPricePer1k,
+    inputPricePer1m,
+    outputPricePer1m,
     isActive,
   } = request;
 
@@ -142,11 +142,11 @@ export async function createModel(
     throw new Error("모델 설명은 최대 200자까지 입력 가능합니다.");
   }
 
-  if (inputPricePer1k < 0) {
+  if (inputPricePer1m < 0) {
     throw new Error("입력 토큰 가격은 0 이상이어야 합니다.");
   }
 
-  if (outputPricePer1k < 0) {
+  if (outputPricePer1m < 0) {
     throw new Error("출력 토큰 가격은 0 이상이어야 합니다.");
   }
 
@@ -161,8 +161,8 @@ export async function createModel(
         modelName,
         displayName,
         displayExplain,
-        inputPricePer1m: inputPricePer1k,
-        outputPricePer1m: outputPricePer1k,
+        inputPricePer1m,
+        outputPricePer1m,
         isActive,
       }),
     });
@@ -209,7 +209,7 @@ export async function updateModel(
   modelId: number,
   request: UpdateModelRequest
 ): Promise<ApiResponse<AIModelDetail>> {
-  const { displayName, displayExplain, inputPricePer1k, outputPricePer1k, isActive } =
+  const { displayName, displayExplain, inputPricePer1m, outputPricePer1m, isActive } =
     request;
 
   // 유효성 검사
@@ -229,11 +229,11 @@ export async function updateModel(
     throw new Error("모델 설명은 최대 200자까지 입력 가능합니다.");
   }
 
-  if (inputPricePer1k !== undefined && inputPricePer1k < 0) {
+  if (inputPricePer1m !== undefined && inputPricePer1m < 0) {
     throw new Error("입력 토큰 가격은 0 이상이어야 합니다.");
   }
 
-  if (outputPricePer1k !== undefined && outputPricePer1k < 0) {
+  if (outputPricePer1m !== undefined && outputPricePer1m < 0) {
     throw new Error("출력 토큰 가격은 0 이상이어야 합니다.");
   }
 
@@ -249,8 +249,8 @@ export async function updateModel(
         body: JSON.stringify({
           displayName,
           displayExplain,
-          inputPricePer1k,
-          outputPricePer1k,
+          inputPricePer1m,
+          outputPricePer1m,
           isActive,
         }),
       }

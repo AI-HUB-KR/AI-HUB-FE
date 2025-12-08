@@ -335,6 +335,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/model.ts` - `UpdateModelRequest`, `AIModelDetail`
 - **API**: `src/lib/api/model.ts` - `updateModel()`
 - **훅**: `src/hooks/useModelDetail.ts` - `useModelDetail().updateModelInfo()`
+- **UI 구현**: `src/app/admin/page.tsx` (AI 모델 수정 탭)
 - **인증**: 관리자 권한 (쿠키 기반)
 - **경로 변수**:
   - `modelId` (integer)
@@ -353,6 +354,16 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 수정 후 자동으로 상태 업데이트
   - 유효성 검사 포함
   - 모든 필드 선택적 (부분 수정 가능)
+- **UI 기능**:
+  - http://localhost:3001/admin 페이지에서 "AI 모델 수정" 탭 제공
+  - 등록된 모든 AI 모델 목록을 테이블 형태로 표시
+  - 각 모델 행에 "수정" 버튼 제공
+  - 수정 버튼 클릭 시 인라인 편집 모드로 전환
+  - 편집 모드에서 모든 필드 수정 가능 (modelName 제외)
+  - "저장" 및 "취소" 버튼 제공
+  - 수정 성공 시 자동으로 목록 새로고침 및 알림
+  - 에러 발생 시 에러 메시지 표시
+  - 로딩 중 상태 표시
 
 ### 3-4. [관리자] AI 모델 삭제
 
