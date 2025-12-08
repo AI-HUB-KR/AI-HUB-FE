@@ -124,25 +124,6 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col gap-3 mb-12">
           <div className="flex items-center gap-4 sm:gap-8">
-            {/* Logo */}
-            <div className="relative h-[48px] w-[66px] sm:h-[64px] sm:w-[88px] flex-shrink-0">
-              <svg
-                className="block size-full"
-                fill="none"
-                preserveAspectRatio="none"
-                viewBox="0 0 88 65"
-              >
-                <g id="Group 71">
-                  <path d={svgPaths.p1e3578f2} stroke="#444648" />
-                  <path
-                    d={svgPaths.p1d5cd6f1}
-                    stroke="#929292"
-                    strokeWidth="2"
-                  />
-                </g>
-              </svg>
-            </div>
-
             {/* Title */}
             <h1 className="font-['Pretendard:SemiBold',sans-serif] text-neutral-100 text-[32px] sm:text-[48px] lg:text-[64px]">
               AI HUB BACK_Office
