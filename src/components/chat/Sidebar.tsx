@@ -5,6 +5,7 @@ import svgPathsSidebar from "@/assets/svgs/sidebar";
 import { ChatRoom } from "@/types/room";
 import { getChatRooms, updateChatRoom } from "@/lib/api/room";
 import { SettingsMenu, SettingsButton } from "./SettingsMenu";
+import { UserInfoDialog } from "./UserInfoDialog";
 
 // ISO 8601 날짜를 UI 표시용 포맷으로 변환
 function formatDate(isoDate: string): string {
@@ -28,6 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onHistoryClick, onChatRoomClick, onNewChatClick, refreshTrigger }: SidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUserInfoOpen, setIsUserInfoOpen] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
@@ -270,9 +272,16 @@ export function Sidebar({ isOpen, onClose, onDashboardClick, onBalanceClick, onH
             onClose={() => setIsSettingsOpen(false)}
             onBalanceClick={onBalanceClick}
             onHistoryClick={onHistoryClick}
+            onUserInfoClick={() => setIsUserInfoOpen(true)}
           />
         </div>
       </div>
+
+      {/* User Info Dialog */}
+      <UserInfoDialog
+        isOpen={isUserInfoOpen}
+        onClose={() => setIsUserInfoOpen(false)}
+      />
     </>
   );
 }

@@ -422,6 +422,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/user.ts` - `UserInfo`
 - **API**: `src/lib/api/user.ts` - `getCurrentUser()`
 - **훅**: `src/hooks/useCurrentUser.ts` - `useCurrentUser()`
+- **UI 구현**: `src/components/chat/UserInfoDialog.tsx`, `src/components/chat/SettingsMenu.tsx`
 - **인증**: 필수 (쿠키 기반)
 - **응답 필드**:
   - userId, username, email
@@ -430,18 +431,28 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 현재 로그인한 사용자 정보 제공
   - autoFetch 옵션 지원
   - 에러 콜백 지원
+- **UI 기능**:
+  - 환경 설정 메뉴에서 "내 정보 조회" 버튼 클릭 시 모달 표시
+  - 사용자 ID, 이름, 이메일, 계정 상태, 가입일 표시
+  - 정보 수정 및 회원 탈퇴 기능 제공
+  - 편집 모드에서 사용자 이름과 이메일 수정 가능
 
 ### 5-4. 회원 탈퇴
 
 - **엔드포인트**: `DELETE /api/v1/users/me`
 - **API**: `src/lib/api/user.ts` - `deleteCurrentUser()`
 - **훅**: `src/hooks/useCurrentUser.ts` - `useCurrentUser().deleteUser()`
+- **UI 구현**: `src/components/chat/UserInfoDialog.tsx`
 - **인증**: 필수 (쿠키 기반)
 - **응답**: 204 No Content
 - **특징**:
   - 소프트 삭제 처리
   - 탈퇴 후 사용자 정보 자동 초기화
   - 에러 발생 시 throw
+- **UI 기능**:
+  - 내 정보 조회 모달에서 "회원 탈퇴" 버튼 제공
+  - 탈퇴 시 확인 다이얼로그 표시
+  - 탈퇴 성공 시 로그인 페이지로 자동 이동
 
 ### 5-5. 내 정보 수정
 
@@ -449,6 +460,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/user.ts` - `UpdateUserRequest`, `UserInfo`
 - **API**: `src/lib/api/user.ts` - `updateCurrentUser()`
 - **훅**: `src/hooks/useCurrentUser.ts` - `useCurrentUser().updateUser()`
+- **UI 구현**: `src/components/chat/UserInfoDialog.tsx`
 - **인증**: 필수 (쿠키 기반)
 - **요청 필드**:
   - `username` (필수, 2~30자, 공백 불가)
@@ -460,6 +472,12 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 수정 후 자동으로 사용자 정보 업데이트
   - 유효성 검사 포함 (길이, 공백, 이메일 형식)
   - 에러 발생 시 throw
+- **UI 기능**:
+  - 내 정보 조회 모달에서 "정보 수정" 버튼 클릭 시 편집 모드로 전환
+  - 편집 모드에서 사용자 이름과 이메일 입력 필드 활성화
+  - "저장" 버튼으로 수정 내용 저장, "취소" 버튼으로 편집 취소
+  - 저장 성공 시 자동으로 화면 업데이트
+  - 유효성 검사 실패 시 에러 메시지 표시
 
 ### 5-6. 결제 내역 조회
 

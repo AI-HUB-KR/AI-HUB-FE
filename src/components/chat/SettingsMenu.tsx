@@ -42,9 +42,10 @@ interface SettingsMenuProps {
   onClose: () => void;
   onBalanceClick?: () => void;
   onHistoryClick?: () => void;
+  onUserInfoClick?: () => void;
 }
 
-export function SettingsMenu({ isOpen, onClose, onBalanceClick, onHistoryClick }: SettingsMenuProps) {
+export function SettingsMenu({ isOpen, onClose, onBalanceClick, onHistoryClick, onUserInfoClick }: SettingsMenuProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -80,6 +81,11 @@ export function SettingsMenu({ isOpen, onClose, onBalanceClick, onHistoryClick }
     onClose();
   };
 
+  const handleUserInfo = () => {
+    onUserInfoClick?.();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -90,8 +96,9 @@ export function SettingsMenu({ isOpen, onClose, onBalanceClick, onHistoryClick }
       {/* Menu */}
       <div className="absolute bottom-[70px] left-4 z-50 w-[220px] rounded-[15px] bg-[#2c2e30] p-4 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
         <div className="space-y-1">
-          <MenuItem icon="/logout.svg" label="로그아웃" onClick={handleLogout} />
+          <MenuItem icon="/user.svg" label="내 정보 조회" onClick={handleUserInfo} />
           <MenuItem icon="/wallet.svg" label="잔액 조회" onClick={handleBalance} />
+          <MenuItem icon="/logout.svg" label="로그아웃" onClick={handleLogout} />
         </div>
       </div>
     </>
