@@ -41,9 +41,11 @@ interface SettingsMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onBalanceClick?: () => void;
+  onHistoryClick?: () => void;
+  onUserInfoClick?: () => void;
 }
 
-export function SettingsMenu({ isOpen, onClose, onBalanceClick }: SettingsMenuProps) {
+export function SettingsMenu({ isOpen, onClose, onBalanceClick, onHistoryClick, onUserInfoClick }: SettingsMenuProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -75,6 +77,12 @@ export function SettingsMenu({ isOpen, onClose, onBalanceClick }: SettingsMenuPr
   };
 
   const handleHistory = () => {
+    onHistoryClick?.();
+    onClose();
+  };
+
+  const handleUserInfo = () => {
+    onUserInfoClick?.();
     onClose();
   };
 
@@ -88,17 +96,9 @@ export function SettingsMenu({ isOpen, onClose, onBalanceClick }: SettingsMenuPr
       {/* Menu */}
       <div className="absolute bottom-[70px] left-4 z-50 w-[220px] rounded-[15px] bg-[#2c2e30] p-4 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
         <div className="space-y-1">
-          <MenuItem icon="/logout.svg" label="로그아웃" onClick={handleLogout} />
+          <MenuItem icon="/user.svg" label="내 정보 조회" onClick={handleUserInfo} />
           <MenuItem icon="/wallet.svg" label="잔액 조회" onClick={handleBalance} />
-          <MenuItem
-            icon="/coin.svg"
-            label={
-              <>
-                코인 거래 내역 조회 <span className="text-white text-[12px] ml-1">(임시)</span>
-              </>
-            }
-            onClick={handleHistory}
-          />
+          <MenuItem icon="/logout.svg" label="로그아웃" onClick={handleLogout} />
         </div>
       </div>
     </>

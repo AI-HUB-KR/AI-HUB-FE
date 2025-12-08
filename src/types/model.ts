@@ -6,9 +6,9 @@ export interface AIModel {
   modelName: string; // 내부 모델 식별자 (예: gpt-4)
   displayName: string; // 사용자 표시 이름 (예: GPT-4)
   displayExplain: string; // 모델 설명
-  inputPricePer1k: number; // 입력 1k 토큰당 가격
-  outputPricePer1k: number; // 출력 1k 토큰당 가격
-  averagePricePer1k: number; // 평균 가격
+  inputPricePer1m: number; // 입력 1m 토큰당 가격
+  outputPricePer1m: number; // 출력 1m 토큰당 가격
+  averagePricePer1k?: number; // 평균 가격 (선택적)
   isActive: boolean; // 활성화 여부
   createdAt: string; // 생성 시각 (ISO 8601)
 }
@@ -19,8 +19,8 @@ export interface AIModelDetail {
   modelName: string; // 내부 모델 식별자 (예: gpt-4)
   displayName: string; // 사용자 표시 이름 (예: GPT-4)
   displayExplain: string; // 모델 설명
-  inputPricePer1k: number; // 입력 1k 토큰당 가격
-  outputPricePer1k: number; // 출력 1k 토큰당 가격
+  inputPricePer1m: number; // 입력 1m 토큰당 가격
+  outputPricePer1m: number; // 출력 1m 토큰당 가격
   isActive: boolean; // 활성화 여부
   createdAt: string; // 생성 시각 (ISO 8601)
   updatedAt: string; // 수정 시각 (ISO 8601)
@@ -31,8 +31,8 @@ export interface CreateModelRequest {
   modelName: string; // 시스템 내부 모델 식별자 (필수, 소문자, 하이픈 허용)
   displayName: string; // 프런트 표시 이름 (필수, 최대 30자)
   displayExplain?: string; // 모델 설명 (선택, 최대 200자)
-  inputPricePer1k: number; // 입력 1k 토큰당 USD 가격 (필수, 0 이상)
-  outputPricePer1k: number; // 출력 1k 토큰당 USD 가격 (필수, 0 이상)
+  inputPricePer1m: number; // 입력 1m 토큰당 USD 가격 (필수, 0 이상)
+  outputPricePer1m: number; // 출력 1m 토큰당 USD 가격 (필수, 0 이상)
   isActive: boolean; // 활성화 여부 (필수)
 }
 
@@ -40,7 +40,7 @@ export interface CreateModelRequest {
 export interface UpdateModelRequest {
   displayName?: string; // 사용자 표시 이름 (선택, 최대 30자)
   displayExplain?: string; // 모델 설명 (선택, 최대 200자)
-  inputPricePer1k?: number; // 입력 1k 토큰당 USD 가격 (선택, 0 이상)
-  outputPricePer1k?: number; // 출력 1k 토큰당 USD 가격 (선택, 0 이상)
+  inputPricePer1m?: number; // 입력 1m 토큰당 USD 가격 (선택, 0 이상)
+  outputPricePer1m?: number; // 출력 1m 토큰당 USD 가격 (선택, 0 이상)
   isActive?: boolean; // 활성화 여부 (선택)
 }

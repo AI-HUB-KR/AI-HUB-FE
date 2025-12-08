@@ -221,12 +221,22 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **훅**: `src/hooks/useRooms.ts`
   - `useRooms().deleteRoom()`: 일반 페이지네이션용
   - `useInfiniteRooms().deleteRoom()`: 무한 스크롤용
+- **UI 구현**: `src/components/chat/Sidebar.tsx`
+- **인증**: 필수 (쿠키 기반)
 - **경로 변수**:
   - `roomId` (UUID)
 - **응답**: 204 No Content
 - **특징**:
   - 연관 메시지도 함께 삭제
   - 삭제 후 자동으로 목록 새로고침
+  - 에러 처리 포함 (권한 없음, 채팅방 없음 등)
+- **UI 기능**:
+  - 채팅방 목록에서 호버 시 삭제 버튼 표시 (휴지통 아이콘)
+  - 편집 버튼과 삭제 버튼이 함께 표시됨
+  - 삭제 버튼 클릭 시 확인 다이얼로그 표시
+  - "채팅방을 삭제하시겠습니까? 삭제된 채팅방과 메시지는 복구할 수 없습니다." 안내
+  - 삭제 진행 중 로딩 스피너 표시
+  - 삭제 성공 시 자동으로 목록 새로고침
 
 ### 2-3. 채팅방 제목 수정
 
@@ -234,6 +244,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/room.ts` - `UpdateChatRoomRequest`, `RoomDetail`
 - **API**: `src/lib/api/room.ts` - `updateChatRoom()`
 - **훅**: `src/hooks/useRoomDetail.ts` - `useRoomDetail().updateTitle()`
+- **UI 구현**: `src/components/chat/Sidebar.tsx`
 - **경로 변수**:
   - `roomId` (UUID)
 - **요청 필드**:
@@ -244,6 +255,13 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **특징**:
   - 수정 후 자동으로 상태 업데이트
   - 유효성 검사 포함
+- **UI 기능**:
+  - 채팅방 목록에서 호버 시 연필 아이콘 편집 버튼 표시
+  - 편집 버튼 클릭 시 인라인 편집 모드로 전환
+  - 입력 필드에서 Enter 키로 저장, Escape 키로 취소
+  - 저장(✓) 및 취소(✕) 버튼 제공
+  - 최대 30자 제한 및 빈 제목 방지
+  - 수정 성공 시 자동 목록 새로고침
 
 ### 3. AI 모델 목록 조회
 
@@ -286,6 +304,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/model.ts` - `CreateModelRequest`, `AIModelDetail`
 - **API**: `src/lib/api/model.ts` - `createModel()`
 - **훅**: `src/hooks/useModels.ts` - `useModels().createNewModel()`
+- **UI 구현**: `src/app/admin/page.tsx` (AI 모델 등록 탭)
 - **인증**: 관리자 권한 (쿠키 기반)
 - **요청 필드**:
   - `modelName` (필수, 소문자, 하이픈 허용)
@@ -302,6 +321,13 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 관리자 권한 필수
   - 등록 후 자동으로 목록 새로고침
   - 유효성 검사 포함
+- **UI 기능**:
+  - http://localhost:3001/admin 페이지에서 "AI모델 등록" 탭 제공
+  - 모델 식별자, 표시 이름, 설명, 가격, 활성화 여부 입력 폼
+  - 등록 진행 중 로딩 상태 표시 ("등록 중...")
+  - 등록 성공 시 폼 자동 초기화 및 알림
+  - 에러 발생 시 에러 메시지 표시
+  - 필드별 유효성 검사 안내 메시지 제공
 
 ### 3-3. [관리자] AI 모델 수정
 
@@ -309,6 +335,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/model.ts` - `UpdateModelRequest`, `AIModelDetail`
 - **API**: `src/lib/api/model.ts` - `updateModel()`
 - **훅**: `src/hooks/useModelDetail.ts` - `useModelDetail().updateModelInfo()`
+- **UI 구현**: `src/app/admin/page.tsx` (AI 모델 수정 탭)
 - **인증**: 관리자 권한 (쿠키 기반)
 - **경로 변수**:
   - `modelId` (integer)
@@ -327,6 +354,16 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 수정 후 자동으로 상태 업데이트
   - 유효성 검사 포함
   - 모든 필드 선택적 (부분 수정 가능)
+- **UI 기능**:
+  - http://localhost:3001/admin 페이지에서 "AI 모델 수정" 탭 제공
+  - 등록된 모든 AI 모델 목록을 테이블 형태로 표시
+  - 각 모델 행에 "수정" 버튼 제공
+  - 수정 버튼 클릭 시 인라인 편집 모드로 전환
+  - 편집 모드에서 모든 필드 수정 가능 (modelName 제외)
+  - "저장" 및 "취소" 버튼 제공
+  - 수정 성공 시 자동으로 목록 새로고침 및 알림
+  - 에러 발생 시 에러 메시지 표시
+  - 로딩 중 상태 표시
 
 ### 3-4. [관리자] AI 모델 삭제
 
@@ -380,7 +417,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **인증**: Public (인증 불필요)
 - **응답 필드**:
   - modelId, modelName, displayName
-  - inputPricePer1k, outputPricePer1k, averagePricePer1k
+  - inputPricePer1k, inputPricePer1m, outputPricePer1m
   - isActive
 - **특징**:
   - Public API로 인증 없이 사용 가능
@@ -414,6 +451,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/user.ts` - `UserInfo`
 - **API**: `src/lib/api/user.ts` - `getCurrentUser()`
 - **훅**: `src/hooks/useCurrentUser.ts` - `useCurrentUser()`
+- **UI 구현**: `src/components/chat/UserInfoDialog.tsx`, `src/components/chat/SettingsMenu.tsx`
 - **인증**: 필수 (쿠키 기반)
 - **응답 필드**:
   - userId, username, email
@@ -422,18 +460,28 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 현재 로그인한 사용자 정보 제공
   - autoFetch 옵션 지원
   - 에러 콜백 지원
+- **UI 기능**:
+  - 환경 설정 메뉴에서 "내 정보 조회" 버튼 클릭 시 모달 표시
+  - 사용자 ID, 이름, 이메일, 계정 상태, 가입일 표시
+  - 정보 수정 및 회원 탈퇴 기능 제공
+  - 편집 모드에서 사용자 이름과 이메일 수정 가능
 
 ### 5-4. 회원 탈퇴
 
 - **엔드포인트**: `DELETE /api/v1/users/me`
 - **API**: `src/lib/api/user.ts` - `deleteCurrentUser()`
 - **훅**: `src/hooks/useCurrentUser.ts` - `useCurrentUser().deleteUser()`
+- **UI 구현**: `src/components/chat/UserInfoDialog.tsx`
 - **인증**: 필수 (쿠키 기반)
 - **응답**: 204 No Content
 - **특징**:
   - 소프트 삭제 처리
   - 탈퇴 후 사용자 정보 자동 초기화
   - 에러 발생 시 throw
+- **UI 기능**:
+  - 내 정보 조회 모달에서 "회원 탈퇴" 버튼 제공
+  - 탈퇴 시 확인 다이얼로그 표시
+  - 탈퇴 성공 시 로그인 페이지로 자동 이동
 
 ### 5-5. 내 정보 수정
 
@@ -441,6 +489,7 @@ export function useYourFeature(options: UseYourFeatureOptions) {
 - **타입**: `src/types/user.ts` - `UpdateUserRequest`, `UserInfo`
 - **API**: `src/lib/api/user.ts` - `updateCurrentUser()`
 - **훅**: `src/hooks/useCurrentUser.ts` - `useCurrentUser().updateUser()`
+- **UI 구현**: `src/components/chat/UserInfoDialog.tsx`
 - **인증**: 필수 (쿠키 기반)
 - **요청 필드**:
   - `username` (필수, 2~30자, 공백 불가)
@@ -452,6 +501,12 @@ export function useYourFeature(options: UseYourFeatureOptions) {
   - 수정 후 자동으로 사용자 정보 업데이트
   - 유효성 검사 포함 (길이, 공백, 이메일 형식)
   - 에러 발생 시 throw
+- **UI 기능**:
+  - 내 정보 조회 모달에서 "정보 수정" 버튼 클릭 시 편집 모드로 전환
+  - 편집 모드에서 사용자 이름과 이메일 입력 필드 활성화
+  - "저장" 버튼으로 수정 내용 저장, "취소" 버튼으로 편집 취소
+  - 저장 성공 시 자동으로 화면 업데이트
+  - 유효성 검사 실패 시 에러 메시지 표시
 
 ### 5-6. 결제 내역 조회
 
