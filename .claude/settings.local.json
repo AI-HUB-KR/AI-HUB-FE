@@ -8,7 +8,8 @@
       "Bash(npm audit:*)",
       "Bash(pnpm list:*)",
       "Bash(pnpm audit:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(pnpm update:*)"
     ],
     "deny": [],
     "ask": []
